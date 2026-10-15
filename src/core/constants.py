@@ -17,6 +17,14 @@ class Orientation(IntEnum):
     VERTICAL = 2
 
 
+class Tile:
+    VOID = "."
+    FLOOR = "#"
+    START = "S"
+    GOAL = "G"
+    FRAGILE = "F"
+
+
 class Outcome(Enum):
     OK = auto()
     FELL = auto()
