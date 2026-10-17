@@ -85,6 +85,9 @@ def load_level(file_path: str | Path) -> Level:
     if actual_ids != expected_ids:
         raise ValueError(f"[{path}] Bridge IDs must be continuous from 0 to {len(bridges_data)-1}")
 
+    if len(bridges) > 62:
+        raise ValueError(f"[{path}] Number of bridges exceeds maximum limit of 62")
+
     # 4. Switches
     switches = {}
     switches_data = data.get("switches", [])
@@ -99,6 +102,8 @@ def load_level(file_path: str | Path) -> Level:
             raise ValueError(f"[{path}] Switch at {pos} out of bounds")
         if terrain[r][c] != Tile.FLOOR:
              raise ValueError(f"[{path}] Switch at {pos} must be on a FLOOR tile")
+        if pos == start_pos:
+             raise ValueError(f"[{path}] Switch at {pos} cannot be on the Start tile (S)")
         if pos in switches:
             raise ValueError(f"[{path}] Multiple switches at {pos}")
         if pos in bridge_at:
@@ -158,6 +163,13 @@ def load_level(file_path: str | Path) -> Level:
             split_targets = (targets[0], targets[1])
 
         switches[pos] = Switch(pos=pos, type=s_type, effect=effect, split_targets=split_targets)
+
+    switch_positions = set(switches.keys())
+    for switch in switches.values():
+        if switch.type == SwitchType.SPLIT:
+            t0, t1 = switch.split_targets
+            if t0 in switch_positions or t1 in switch_positions:
+                raise ValueError(f"[{path}] Split targets {t0} and {t1} must not overlap with any switch")
 
     return Level(
         name=name,
