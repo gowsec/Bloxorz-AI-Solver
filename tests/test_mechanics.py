@@ -193,7 +193,7 @@ def test_split_switch_splits_standing_block():
         SwitchType.SPLIT,
         split_targets=((1, 0), (1, 3)),
     )
-    level = make_level(("S###G", "####"), switches={(0, 2): split})
+    level = make_level(("S###G", "#####"), switches={(0, 2): split})
     state = State(BlockPose(0, 0, Orientation.HORIZONTAL), 0)
 
     next_state, outcome = Engine(level).try_step(state, Action(Direction.RIGHT))
