@@ -253,3 +253,9 @@ def test_invalid_action_for_blocked_state_is_reported():
 
     assert next_state is None
     assert outcome is Outcome.INVALID_ACTION
+
+def test_closed_bridge_blocks_and_open_bridge_supports():
+    for open_, expected in ((False, Outcome.FELL), (True, Outcome.OK)):
+        level = make_level(("S#.G",), {0: Bridge((0, 2), open_)})
+        _, outcome = Engine(level).try_step(Engine(level).initial_state(), Action(Direction.RIGHT))
+        assert outcome is expected

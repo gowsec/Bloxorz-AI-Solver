@@ -195,6 +195,8 @@ Bloxorz-AI-Solver/
 │   ├── plot_results.py          # Vẽ biểu đồ từ CSV/JSON
 │   └── results/                 # Xuất CSV/JSON
 │
+├── feedbacks/ 
+│
 └── docs/
     ├── architecture.md          # State, engine.step, SolverResult, thứ tự xử lý mechanics
     └── report_template.md
