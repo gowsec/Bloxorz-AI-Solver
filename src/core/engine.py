@@ -23,6 +23,9 @@ class Engine:
         return [Action(direction, cube) for direction in Direction for cube in (0, 1)]
 
     def try_step(self, state: State, action: Action) -> tuple[State | None, Outcome]:
+        if self.is_goal(state):
+            return None, Outcome.INVALID_ACTION
+
         pose = state.pose
         if not isinstance(action, Action) or not isinstance(action.direction, Direction):
             return None, Outcome.INVALID_ACTION
