@@ -1,5 +1,9 @@
 # Kiến trúc hệ thống Bloxorz AI Solver
 
+> Trạng thái triển khai bước 1: xem `milestone01.md`. Level hiện có name,
+> terrain, start, goal; rows/cols là property. `Level.from_grid` tạo level
+> viết tay tạm thời. Các interface đầy đủ dưới đây là đích triển khai tiếp theo.
+
 > **Phiên bản:** 1.0 (bản chốt interface)
 > **Người duyệt thay đổi:** Minh Quang (Team Lead). Mọi thay đổi ở các interface trong tài liệu này phải qua Pull Request và được Minh Quang duyệt, vì chúng ảnh hưởng đến cả bốn solver, GUI và benchmark.
 
