@@ -1,0 +1,16 @@
+{
+  "name": "Level 11: Soft Switch Bridge",
+  "grid": [
+    "S##.##G"
+  ],
+  "bridges": [
+    { "id": 0, "pos": [0, 3], "initial_open": false }
+  ],
+  "switches": [
+    {
+      "pos": [0, 1],
+      "type": "soft",
+      "effect": { "mode": "toggle", "bridges": [0] }
+    }
+  ]
+}
