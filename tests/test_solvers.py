@@ -5,7 +5,7 @@ from src.solvers.base_solver import (
     STATUS_TIMEOUT,
 )
 from src.solvers.bfs import BFSSolver
-
+from src.solvers.dfs import DFSSolver
 import pytest
 import tracemalloc
 
@@ -45,8 +45,8 @@ def diamond_graph():
         start="A",
         goals=["G"],
     )
-
-
+# ----------------------------------------------------------------
+# Test BFS
 def test_bfs_finds_shortest_path():
     engine = diamond_graph()
     result = BFSSolver(engine).solve()
@@ -156,7 +156,7 @@ def test_bfs_node_limit_exactly_enough():
 
 # Vá lỗi fail oan cho 2 test tracemalloc
 @pytest.mark.skipif(tracemalloc.is_tracing(), reason="tracemalloc đã bật từ bên ngoài")
-def test_peak_memory_when_tracemalloc_already_running():
+def test_bfs_peak_memory_when_tracemalloc_already_running():
     tracemalloc.start()
     try:
         result = BFSSolver(diamond_graph()).solve(measure_memory=True)
@@ -166,7 +166,7 @@ def test_peak_memory_when_tracemalloc_already_running():
         tracemalloc.stop()
 
 @pytest.mark.skipif(tracemalloc.is_tracing(), reason="tracemalloc đã bật từ bên ngoài")
-def test_tracemalloc_stopped_even_when_limit_hit():
+def test_bfs_tracemalloc_stopped_even_when_limit_hit():
     chain = {i: [("n", i + 1)] for i in range(100)}
     engine = FakeGraphEngine(chain, start=0, goals=[100])
     BFSSolver(engine, node_limit=5).solve()
@@ -182,9 +182,155 @@ def test_bfs_measure_memory_flag():
     assert result.search_time >= 0
     assert result.status == STATUS_SOLVED
 
-def test_unsolved_total_cost_is_inf():
+def test_bfs_unsolved_total_cost_is_inf():
     engine = FakeGraphEngine({"A": [("x", "B")], "B": []}, start="A", goals=["Z"])
     assert BFSSolver(engine).solve().total_cost == float("inf")
 
-def test_peak_memory_positive_when_measured():
+def test_bfs_peak_memory_positive_when_measured():
     assert BFSSolver(diamond_graph()).solve().peak_memory > 0
+
+# ---------------------------------------------------------------
+# Test DFS
+
+def test_dfs_finds_valid_path():
+    engine = diamond_graph()
+    result = DFSSolver(engine).solve()
+
+    assert result.status == STATUS_SOLVED
+    # Theo thứ tự nạp vào ngăn xếp ngược (reversed), hành động "a" (tới B) và "b" (tới C)
+    # được nạp, "a" được pop ra trước. Lộ trình của DFS sẽ đi qua a -> c -> e.
+    assert result.path == ["a", "c", "e"] 
+    assert result.states == ["A", "B", "D", "G"]
+    
+    # Kiểm tra bất biến
+    assert result.solution_length == len(result.path)
+    assert len(result.states) == len(result.path) + 1
+    
+    # Kiểm tra replay
+    assert replay(engine, "A", result.path) == "G"
+
+
+def test_dfs_start_is_goal():
+    engine = FakeGraphEngine({"A": [("x", "B")]}, start="A", goals=["A"])
+    result = DFSSolver(engine).solve()
+
+    assert result.status == STATUS_SOLVED
+    assert result.path == []
+    assert result.states == ["A"]
+    assert result.expanded_nodes == 0
+    
+    # Kiểm tra bất biến
+    assert result.solution_length == 0
+    assert len(result.states) == 1
+
+
+def test_dfs_no_solution():
+    engine = FakeGraphEngine({"A": [("x", "B")], "B": []}, start="A", goals=["Z"])
+    result = DFSSolver(engine).solve()
+
+    assert result.status == STATUS_NO_SOLUTION
+    assert result.path == []
+    assert result.states == []
+    assert result.expanded_nodes == 2
+    
+    # Kiểm tra bất biến vô nghiệm
+    assert result.solution_length == 0
+
+
+def test_dfs_handles_cycles():
+    engine = FakeGraphEngine(
+        {"A": [("x", "B")], "B": [("y", "A"), ("z", "C")], "C": [("w", "G")]},
+        start="A",
+        goals=["G"],
+    )
+    result = DFSSolver(engine).solve()
+
+    assert result.status == STATUS_SOLVED
+    assert result.path == ["x", "z", "w"]
+    assert result.solution_length == 3
+
+
+def test_dfs_counters():
+    result = DFSSolver(diamond_graph()).solve()
+    assert result.algorithm == "dfs"
+    # DFS đi nhánh a trước, mở A, B, D và gặp G -> 3 node được mở rộng
+    assert result.expanded_nodes == 3
+    # Sinh ra A, B, C, D, G => 5 node
+    assert result.generated_nodes == 5
+    assert result.max_frontier == 2
+    assert result.peak_memory > 0
+    assert result.search_time >= 0
+
+@pytest.mark.skipif(tracemalloc.is_tracing(), reason="tracemalloc đã bật từ bên ngoài")
+def test_dfs_tracemalloc_is_stopped_after_solve():
+    DFSSolver(diamond_graph()).solve()
+    assert not tracemalloc.is_tracing()
+
+
+def test_dfs_limit_reached():
+    chain = {i: [("n", i + 1)] for i in range(100)}
+    engine = FakeGraphEngine(chain, start=0, goals=[100])
+    
+    result = DFSSolver(engine, node_limit=10).solve()
+
+    assert result.status == STATUS_NODE_LIMIT
+    assert result.path == []
+    assert result.expanded_nodes == 10
+    assert result.solution_length == 0
+
+
+def test_dfs_timeout():
+    chain = {i: [("n", i + 1)] for i in range(100)}
+    engine = FakeGraphEngine(chain, start=0, goals=[100])
+    
+    result = DFSSolver(engine, time_limit=0.0).solve()
+
+    assert result.status == STATUS_TIMEOUT
+    assert result.path == []
+    assert result.solution_length == 0
+
+
+@pytest.mark.skipif(tracemalloc.is_tracing(), reason="tracemalloc đã bật từ bên ngoài")
+def test_dfs_measure_memory_off_does_not_start_tracemalloc():
+    DFSSolver(diamond_graph()).solve(measure_memory=False)
+    assert not tracemalloc.is_tracing()
+
+
+def test_dfs_node_limit_exactly_enough():
+    # diamond_graph cần đúng 3 lần mở rộng đối với DFS (A, B, D)
+    assert DFSSolver(diamond_graph(), node_limit=3).solve().status == STATUS_SOLVED
+    assert DFSSolver(diamond_graph(), node_limit=2).solve().status == STATUS_NODE_LIMIT
+
+
+@pytest.mark.skipif(tracemalloc.is_tracing(), reason="tracemalloc đã bật từ bên ngoài")
+def test_dfs_peak_memory_when_tracemalloc_already_running():
+    tracemalloc.start()
+    try:
+        result = DFSSolver(diamond_graph()).solve(measure_memory=True)
+        assert result.peak_memory > 0
+        assert tracemalloc.is_tracing() 
+    finally:
+        tracemalloc.stop()
+
+@pytest.mark.skipif(tracemalloc.is_tracing(), reason="tracemalloc đã bật từ bên ngoài")
+def test_dfs_tracemalloc_stopped_even_when_limit_hit():
+    chain = {i: [("n", i + 1)] for i in range(100)}
+    engine = FakeGraphEngine(chain, start=0, goals=[100])
+    DFSSolver(engine, node_limit=5).solve()
+    assert not tracemalloc.is_tracing()
+
+def test_dfs_measure_memory_flag():
+    engine = diamond_graph()
+    
+    result = DFSSolver(engine).solve(measure_memory=False)
+
+    assert result.peak_memory == 0
+    assert result.search_time >= 0
+    assert result.status == STATUS_SOLVED
+
+def test_dfs_unsolved_total_cost_is_inf():
+    engine = FakeGraphEngine({"A": [("x", "B")], "B": []}, start="A", goals=["Z"])
+    assert DFSSolver(engine).solve().total_cost == float("inf")
+
+def test_dfs_peak_memory_positive_when_measured():
+    assert DFSSolver(diamond_graph()).solve().peak_memory > 0
