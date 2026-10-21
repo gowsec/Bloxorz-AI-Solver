@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from src.core.board import Bridge, Effect, EffectMode, Level, Switch, SwitchType
@@ -6,6 +8,8 @@ from src.core.engine import Engine
 from src.core.move import Action
 from src.core.state import BlockPose, SplitPose, State
 from src.mechanics.bridge import apply_effect, initial_bridges
+from src.mechanics.split import merge_if_adjacent, split_block
+from src.utils.json_loader import load_level
 
 
 def make_level(
@@ -31,6 +35,47 @@ def test_initial_bridges_uses_bridge_ids_as_bit_positions():
     level = make_level(("S..G",), {0: Bridge((0, 1), True), 1: Bridge((0, 2), False)})
 
     assert initial_bridges(level) == 0b01
+
+
+def test_split_block_moves_standing_block_to_targets():
+    pose = BlockPose(2, 3, Orientation.STANDING)
+    targets = ((0, 0), (2, 3))
+
+    assert split_block(pose, targets) == SplitPose(*targets)
+
+
+def test_split_block_rejects_nonstanding_block():
+    pose = BlockPose(2, 3, Orientation.HORIZONTAL)
+
+    with pytest.raises(ValueError, match="Only a standing block can split"):
+        split_block(pose, ((0, 0), (2, 3)))
+
+
+@pytest.mark.parametrize(
+    ("pose", "expected"),
+    [
+        (SplitPose((1, 2), (1, 3)), BlockPose(1, 2, Orientation.HORIZONTAL)),
+        (SplitPose((2, 1), (3, 1)), BlockPose(2, 1, Orientation.VERTICAL)),
+    ],
+)
+def test_merge_if_adjacent_returns_block_pose(pose, expected):
+    assert merge_if_adjacent(pose) == expected
+
+
+def test_merge_if_not_adjacent_keeps_split_pose():
+    pose = SplitPose((0, 0), (2, 2))
+
+    assert merge_if_adjacent(pose) == pose
+
+
+def test_level11_soft_switch_opens_bridge():
+    level_path = Path(__file__).parents[1] / "levels" / "level11.json"
+    engine = Engine(load_level(level_path))
+
+    next_state, outcome = engine.try_step(engine.initial_state(), Action(Direction.RIGHT))
+
+    assert outcome is Outcome.OK
+    assert next_state.bridges & 1 == 1
 
 
 @pytest.mark.parametrize(
