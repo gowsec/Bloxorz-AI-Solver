@@ -15,7 +15,7 @@ class Game:
         pygame.font.init()
         try:
             screen = pygame.display.set_mode((1000, 760), pygame.RESIZABLE)
-            pygame.display.set_caption("Bloxorz AI Solver | Board preview")
+            pygame.display.set_caption("Bloxorz AI Solver | Isometric preview")
             clock = pygame.time.Clock()
             renderer = Renderer()
             running = True

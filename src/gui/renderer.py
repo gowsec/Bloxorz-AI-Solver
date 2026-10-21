@@ -1,16 +1,20 @@
-"""Draw a top-down board using primitives, without external image assets."""
+"""Draw a shaded isometric board using pygame-ce polygons."""
 
 import pygame
-
 from src.core.board import Level
 
 BACKGROUND = (17, 24, 39)
 TEXT = (230, 237, 247)
 MUTED = (151, 168, 192)
-FLOOR = (100, 124, 155)
+FLOOR = (166, 181, 199)
 FRAGILE = (235, 155, 66)
 GOAL = (70, 218, 174)
-BLOCK = (113, 170, 255)
+BLOCK = (169, 116, 65)
+
+
+def project(row: float, col: float, z: float = 0) -> pygame.Vector2:
+    """Board units to isometric coordinates; z is height above the floor."""
+    return pygame.Vector2(col - row, (col + row) * 0.5 - z)
 
 
 class Renderer:
@@ -19,42 +23,83 @@ class Renderer:
         self.font = pygame.font.Font(None, 24)
 
     def draw(self, screen: pygame.Surface, level: Level) -> None:
-        screen.fill(BACKGROUND)
         width, height = screen.get_size()
-        # Draw on a fixed minimum canvas so resizing never crops individual UI elements.
         canvas = pygame.Surface((max(640, width), max(520, height)))
         canvas.fill(BACKGROUND)
         w, h = canvas.get_size()
-        canvas.blit(self.title_font.render("BLOXORZ / AI SOLVER", True, TEXT), (32, 24))
-        canvas.blit(self.font.render(level.name, True, MUTED), (32, 66))
-        tile = max(1, min(64, (w - 96) // level.cols, (h - 240) // level.rows))
-        left = (w - tile * level.cols) // 2
-        top = 112 + (h - 240 - tile * level.rows) // 2
-        for r, row in enumerate(level.terrain):
-            for c, cell in enumerate(row):
-                rect = pygame.Rect(left + c * tile, top + r * tile, tile, tile)
-                pygame.draw.rect(canvas, (29, 40, 59), rect, 1)
-                if cell == ".":
-                    continue
-                face = rect.inflate(-4, -4)
-                pygame.draw.rect(canvas, FRAGILE if cell == "F" else FLOOR, face, border_radius=3)
-                if (r, c) == level.goal:
-                    hole = face.inflate(-tile // 3, -tile // 3)
-                    pygame.draw.rect(canvas, BACKGROUND, hole, border_radius=3)
-                    pygame.draw.rect(canvas, GOAL, hole, 3, border_radius=3)
-                if cell == "F":
-                    canvas.blit(self.font.render("F", True, BACKGROUND), face.move(6, 3))
-                if (r, c) == level.start:
-                    block = face.inflate(-tile // 3, -tile // 5)
-                    pygame.draw.rect(canvas, BLOCK, block, border_radius=4)
-                    pygame.draw.rect(canvas, TEXT, block, 2, border_radius=4)
-                    label = self.font.render("S", True, BACKGROUND)
-                    canvas.blit(label, label.get_rect(center=block.center))
-        for i, (color, label) in enumerate(((FLOOR, "Floor"), (GOAL, "Goal"), (FRAGILE, "Fragile"), (BLOCK, "Start / block"))):
+        canvas.blit(self.title_font.render('BLOXORZ / AI SOLVER', True, TEXT), (32, 24))
+        canvas.blit(self.font.render(level.name + '  /  ISOMETRIC', True, MUTED), (32, 66))
+        bounds = [project(r, c, z) for r in (0, level.rows)
+                  for c in (0, level.cols) for z in (-0.3, 0)]
+        r, c = level.start
+        bounds.extend(project(r + dr, c + dc, 2) for dr, dc in
+                      ((0, 0), (0, 1), (1, 1), (1, 0)))
+        lo = pygame.Vector2(min(p.x for p in bounds), min(p.y for p in bounds))
+        hi = pygame.Vector2(max(p.x for p in bounds), max(p.y for p in bounds))
+        area = pygame.Rect(48, 116, w - 96, h - 252)
+        scale = min(48, area.width / (hi.x - lo.x), area.height / (hi.y - lo.y))
+        origin = pygame.Vector2(area.center) - (lo + hi) * (scale / 2)
+
+        def point(row, col, z=0):
+            p = origin + project(row, col, z) * scale
+            return round(p.x), round(p.y)
+
+        def diamond(row, col, inset=0.025, z=0):
+            return [point(row + dr, col + dc, z) for dr, dc in
+                    ((inset, inset), (inset, 1-inset),
+                     (1-inset, 1-inset), (1-inset, inset))]
+
+        def polygon(color, points, outline=(52, 63, 79)):
+            pygame.draw.polygon(canvas, color, points)
+            if outline:
+                pygame.draw.lines(canvas, outline, True, points, 1)
+
+        cells = [(r, c) for r, line in enumerate(level.terrain)
+                 for c, cell in enumerate(line) if cell != '.']
+        for row, col in cells:
+            shadow = [(x + 8, y + 12) for x, y in diamond(row, col, z=-0.3)]
+            polygon((11, 17, 29), shadow, None)
+
+        # Painter's order: draw distant tiles and their contents first.
+        for row, col in sorted(cells, key=lambda pos: (sum(pos), pos[0])):
+            fragile = level.terrain[row][col] == 'F'
+            top = diamond(row, col)
+            bottom = diamond(row, col, z=-0.3)
+            polygon((157, 91, 37) if fragile else (87, 105, 128),
+                    [top[1], top[2], bottom[2], bottom[1]])
+            polygon((189, 113, 43) if fragile else (112, 131, 152),
+                    [top[2], top[3], bottom[3], bottom[2]])
+            polygon(FRAGILE if fragile else FLOOR, top)
+            if (row, col) == level.goal:
+                opening = diamond(row, col, 0.18)
+                polygon((10, 15, 24), opening, None)
+                # Inner walls remain inside the opening's diamond.
+                center = point(row + 0.5, col + 0.5, -0.12)
+                polygon((46, 62, 77), [opening[0], opening[1], center], None)
+                polygon((32, 45, 59), [opening[3], opening[0], center], None)
+                pygame.draw.lines(canvas, GOAL, True, opening, 2)
+            if fragile:
+                crack = [point(row + dr, col + dc, 0.01) for dr, dc in
+                         ((0.15, 0.4), (0.42, 0.52), (0.5, 0.35), (0.8, 0.62))]
+                pygame.draw.lines(canvas, (146, 83, 32), False, crack, 2)
+            if (row, col) == level.start:
+                base = diamond(row, col, 0.12, 0.02)
+                cap = diamond(row, col, 0.12, 2)
+                polygon((125, 80, 43), [cap[1], cap[2], base[2], base[1]])
+                polygon(BLOCK, [cap[2], cap[3], base[3], base[2]])
+                polygon((221, 177, 116), cap)
+                mid = diamond(row, col, 0.12, 1)
+                pygame.draw.lines(canvas, (103, 68, 40), False, [mid[1], mid[2], mid[3]], 1)
+
+        pygame.draw.line(canvas, (42, 55, 75), (32, h - 116), (w - 32, h - 116))
+        legend = ((FLOOR, 'Floor'), (GOAL, 'Goal'), (FRAGILE, 'Fragile'), (BLOCK, 'Start / block'))
+        for i, (color, label) in enumerate(legend):
             x = 32 + i * 148
-            pygame.draw.rect(canvas, color, (x, h - 92, 16, 16), border_radius=3)
+            pygame.draw.polygon(canvas, color,
+                                [(x, h-84), (x+9, h-90), (x+18, h-84), (x+9, h-78)])
             canvas.blit(self.font.render(label, True, TEXT), (x + 24, h - 94))
-        canvas.blit(self.font.render("Board preview  |  ESC: quit  |  Movement: next milestone", True, MUTED), (32, h - 48))
+        canvas.blit(self.font.render('Board preview  |  ESC: quit  |  Movement: next milestone',
+                                     True, MUTED), (32, h - 48))
         if canvas.get_size() != screen.get_size():
             canvas = pygame.transform.smoothscale(canvas, screen.get_size())
         screen.blit(canvas, (0, 0))

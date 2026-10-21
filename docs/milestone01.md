@@ -16,7 +16,10 @@ cùng độ dài: `.` trống, `#` sàn, `S` bắt đầu, `G` đích, `F` dễ 
 Phải có đúng một S và một G. Tọa độ dùng `(hàng, cột)` từ 0.
 
 `Level.from_grid` kiểm tra dữ liệu và chuyển S/G thành sàn trong `terrain`,
-lưu tọa độ riêng. GUI vẽ bàn cờ nhìn từ trên xuống và ký hiệu khối đứng ở S.
+lưu tọa độ riêng. GUI vẽ bàn cờ isometric 2.5D: sàn có độ dày, ô đích có
+chiều sâu và khối đứng cao hai đơn vị ở S. Vẽ bằng polygon Pygame-ce,
+không cần ảnh ngoài. Phép chiếu dùng x = c - r, y = (c + r) / 2 - z,
+vẽ theo thứ tự xa đến gần và tự căn vừa vùng bàn cờ khi đổi kích thước.
 ESC hoặc nút đóng cửa sổ để thoát. Cửa sổ co giãn, giới hạn 60 FPS.
 
 Đây là bản xem bàn cờ: chưa có di chuyển, luật thắng/thua, cầu/công tắc,
