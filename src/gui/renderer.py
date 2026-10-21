@@ -27,8 +27,7 @@ class Renderer:
         canvas = pygame.Surface((max(640, width), max(520, height)))
         canvas.fill(BACKGROUND)
         w, h = canvas.get_size()
-        canvas.blit(self.title_font.render('BLOXORZ / AI SOLVER', True, TEXT), (32, 24))
-        canvas.blit(self.font.render(level.name + '  /  ISOMETRIC', True, MUTED), (32, 66))
+        canvas.blit(self.title_font.render(level.name, True, TEXT), (32, 24))
         bounds = [project(r, c, z) for r in (0, level.rows)
                   for c in (0, level.cols) for z in (-0.3, 0)]
         r, c = level.start
@@ -36,7 +35,7 @@ class Renderer:
                       ((0, 0), (0, 1), (1, 1), (1, 0)))
         lo = pygame.Vector2(min(p.x for p in bounds), min(p.y for p in bounds))
         hi = pygame.Vector2(max(p.x for p in bounds), max(p.y for p in bounds))
-        area = pygame.Rect(48, 116, w - 96, h - 252)
+        area = pygame.Rect(48, 88, w - 96, h - 160)
         scale = min(48, area.width / (hi.x - lo.x), area.height / (hi.y - lo.y))
         origin = pygame.Vector2(area.center) - (lo + hi) * (scale / 2)
 
@@ -91,15 +90,7 @@ class Renderer:
                 mid = diamond(row, col, 0.12, 1)
                 pygame.draw.lines(canvas, (103, 68, 40), False, [mid[1], mid[2], mid[3]], 1)
 
-        pygame.draw.line(canvas, (42, 55, 75), (32, h - 116), (w - 32, h - 116))
-        legend = ((FLOOR, 'Floor'), (GOAL, 'Goal'), (FRAGILE, 'Fragile'), (BLOCK, 'Start / block'))
-        for i, (color, label) in enumerate(legend):
-            x = 32 + i * 148
-            pygame.draw.polygon(canvas, color,
-                                [(x, h-84), (x+9, h-90), (x+18, h-84), (x+9, h-78)])
-            canvas.blit(self.font.render(label, True, TEXT), (x + 24, h - 94))
-        canvas.blit(self.font.render('Board preview  |  ESC: quit  |  Movement: next milestone',
-                                     True, MUTED), (32, h - 48))
+        canvas.blit(self.font.render('Esc: Exit', True, MUTED), (32, h - 40))
         if canvas.get_size() != screen.get_size():
             canvas = pygame.transform.smoothscale(canvas, screen.get_size())
         screen.blit(canvas, (0, 0))
