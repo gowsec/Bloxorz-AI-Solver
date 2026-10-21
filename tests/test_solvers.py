@@ -334,3 +334,42 @@ def test_dfs_unsolved_total_cost_is_inf():
 
 def test_dfs_peak_memory_positive_when_measured():
     assert DFSSolver(diamond_graph()).solve().peak_memory > 0
+    
+# Kiểm tra từng bước:
+import os
+from src.core.engine import Engine
+from src.utils.json_loader import load_level
+def test_step_by_step_replay_on_real_level():
+    level_path = os.path.join("levels", "level05.json")
+    if not os.path.exists(level_path):
+        pytest.skip(f"Không tìm thấy {level_path}")
+
+    engine = Engine(load_level(level_path))
+    start_state = engine.initial_state()
+
+    # Chạy thuật toán để lấy kết quả
+    result = BFSSolver(engine).solve()
+    if result.status == STATUS_SOLVED:
+        # Nếu bộ giải báo tìm thấy lời giải -> Bắt buộc phải đi đến đích thành công
+        current_state = engine.initial_state()
+        
+        for i, action in enumerate(result.path):
+            successors = dict(engine.get_successors(current_state))
+            assert action in successors, f"Hành động '{action}' không hợp lệ tại bước {i}"
+            current_state = successors[action]
+            
+        assert engine.is_goal(current_state), f"Đường đi của {level_path} không dẫn tới Goal"
+        assert result.solution_length == len(result.path)
+
+    elif result.status == STATUS_NO_SOLUTION:
+        # Nếu bộ giải báo vô nghiệm -> Đường đi phải rỗng
+        assert result.path == []
+        assert result.solution_length == 0
+        
+    elif result.status in (STATUS_TIMEOUT, STATUS_NODE_LIMIT):
+        # Nếu BỊ CẮT NGANG do giới hạn -> Đường đi phải rỗng (chấp nhận được khi test)
+        assert result.path == []
+        
+    else:
+        # Nếu trả về một status lạ, đánh fail test case này
+        pytest.fail(f"Trạng thái trả về không hợp lệ: {result.status}")
