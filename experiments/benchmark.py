@@ -154,7 +154,11 @@ def run_benchmark(
     rows: list[dict[str, Any]] = []
     for level_name, engine in cases:
         for solver_cls in solver_classes:
-            row = benchmark_one(level_name, engine, solver_cls, repeats, node_limit, time_limit)
+            try:
+                row = benchmark_one(level_name, engine, solver_cls, repeats, node_limit, time_limit)
+            except Exception as e:
+                row = {c: "" for c in CSV_COLUMNS} | {
+                    "level": level_name, "algorithm": solver_cls.name, "status": f"error:{type(e).__name__}"}
             rows.append(row)
             if verbose:
                 print(
