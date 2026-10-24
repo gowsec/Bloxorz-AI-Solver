@@ -6,6 +6,7 @@ from src.solvers.base_solver import (
 )
 from src.solvers.bfs import BFSSolver
 from src.solvers.dfs import DFSSolver
+from src.solvers.ucs import UCSSolver
 import pytest
 import tracemalloc
 
@@ -373,3 +374,166 @@ def test_step_by_step_replay_on_real_level():
     else:
         # Nếu trả về một status lạ, đánh fail test case này
         pytest.fail(f"Trạng thái trả về không hợp lệ: {result.status}")
+    
+# ----------------------------------------------------------------
+# Test UCS
+
+def test_ucs_finds_optimal_path():
+    engine = diamond_graph()
+    result = UCSSolver(engine).solve()
+
+    assert result.status == STATUS_SOLVED
+    assert result.path == ["b", "d"]
+    assert result.states == ["A", "C", "G"]
+    
+    assert result.solution_length == len(result.path)
+    assert len(result.states) == len(result.path) + 1
+    assert replay(engine, "A", result.path) == "G"
+
+
+def test_ucs_finds_cheapest_path_with_custom_costs():
+    # Đồ thị: Đi nhánh a tốn 10.0 (ngắn nhưng đắt), đi nhánh b tốn 1.0 mỗi bước (dài nhưng rẻ)
+    engine = FakeGraphEngine(
+        {
+            "A": [("a", "B"), ("b", "C")],
+            "B": [("c", "G")],
+            "C": [("d", "D")],
+            "D": [("e", "G")],
+        },
+        start="A",
+        goals=["G"]
+    )
+    
+    def custom_cost(e, state, action, nxt):
+        return 10.0 if action == "a" else 1.0
+
+    # UCS phải chọn nhánh b -> d -> e (chi phí 3.0) thay vì nhánh a -> c (chi phí 11.0)
+    result = UCSSolver(engine, cost_fn=custom_cost).solve()
+
+    assert result.status == STATUS_SOLVED
+    assert result.path == ["b", "d", "e"] 
+    assert result.total_cost == 3.0
+    assert result.solution_length == 3
+
+
+def test_ucs_start_is_goal():
+    engine = FakeGraphEngine({"A": [("x", "B")]}, start="A", goals=["A"])
+    result = UCSSolver(engine).solve()
+
+    assert result.status == STATUS_SOLVED
+    assert result.path == []
+    assert result.expanded_nodes == 0
+    assert result.solution_length == 0
+
+
+def test_ucs_no_solution():
+    engine = FakeGraphEngine({"A": [("x", "B")], "B": []}, start="A", goals=["Z"])
+    result = UCSSolver(engine).solve()
+
+    assert result.status == STATUS_NO_SOLUTION
+    assert result.path == []
+    assert result.states == []
+    assert result.expanded_nodes == 2
+    assert result.solution_length == 0
+
+
+def test_ucs_handles_cycles():
+    engine = FakeGraphEngine(
+        {"A": [("x", "B")], "B": [("y", "A"), ("z", "C")], "C": [("w", "G")]},
+        start="A",
+        goals=["G"],
+    )
+    result = UCSSolver(engine).solve()
+
+    assert result.status == STATUS_SOLVED
+    assert result.path == ["x", "z", "w"]
+    assert result.solution_length == 3
+
+
+def test_ucs_counters():
+    result = UCSSolver(diamond_graph()).solve()
+    assert result.algorithm == "ucs"
+    # UCS trả về kết quả ngay khi pop G, không đếm G vào số node đã mở rộng
+    assert result.expanded_nodes == 4
+    assert result.generated_nodes == 5
+    assert result.max_frontier >= 2
+    assert result.peak_memory > 0
+    assert result.search_time >= 0
+
+
+@pytest.mark.skipif(tracemalloc.is_tracing(), reason="tracemalloc đã bật từ bên ngoài")
+def test_ucs_tracemalloc_is_stopped_after_solve():
+    UCSSolver(diamond_graph()).solve()
+    assert not tracemalloc.is_tracing()
+
+
+def test_ucs_limit_reached():
+    chain = {i: [("n", i + 1)] for i in range(100)}
+    engine = FakeGraphEngine(chain, start=0, goals=[100])
+    
+    result = UCSSolver(engine, node_limit=10).solve()
+
+    assert result.status == STATUS_NODE_LIMIT
+    assert result.path == []
+    assert result.expanded_nodes == 10
+    assert result.solution_length == 0
+
+
+def test_ucs_timeout():
+    chain = {i: [("n", i + 1)] for i in range(100)}
+    engine = FakeGraphEngine(chain, start=0, goals=[100])
+    
+    result = UCSSolver(engine, time_limit=0.0).solve()
+
+    assert result.status == STATUS_TIMEOUT
+    assert result.path == []
+    assert result.solution_length == 0
+
+
+@pytest.mark.skipif(tracemalloc.is_tracing(), reason="tracemalloc đã bật từ bên ngoài")
+def test_ucs_measure_memory_off_does_not_start_tracemalloc():
+    UCSSolver(diamond_graph()).solve(measure_memory=False)
+    assert not tracemalloc.is_tracing()
+
+
+def test_ucs_node_limit_exactly_enough():
+    # Vì UCS mở rộng đúng 4 node (A, B, C, D), giới hạn 4 là vừa đủ, 3 sẽ bị ngắt
+    assert UCSSolver(diamond_graph(), node_limit=4).solve().status == STATUS_SOLVED
+    assert UCSSolver(diamond_graph(), node_limit=3).solve().status == STATUS_NODE_LIMIT
+
+
+@pytest.mark.skipif(tracemalloc.is_tracing(), reason="tracemalloc đã bật từ bên ngoài")
+def test_ucs_peak_memory_when_tracemalloc_already_running():
+    tracemalloc.start()
+    try:
+        result = UCSSolver(diamond_graph()).solve(measure_memory=True)
+        assert result.peak_memory > 0
+        assert tracemalloc.is_tracing() 
+    finally:
+        tracemalloc.stop()
+
+
+@pytest.mark.skipif(tracemalloc.is_tracing(), reason="tracemalloc đã bật từ bên ngoài")
+def test_ucs_tracemalloc_stopped_even_when_limit_hit():
+    chain = {i: [("n", i + 1)] for i in range(100)}
+    engine = FakeGraphEngine(chain, start=0, goals=[100])
+    UCSSolver(engine, node_limit=5).solve()
+    assert not tracemalloc.is_tracing()
+
+
+def test_ucs_measure_memory_flag():
+    engine = diamond_graph()
+    result = UCSSolver(engine).solve(measure_memory=False)
+
+    assert result.peak_memory == 0
+    assert result.search_time >= 0
+    assert result.status == STATUS_SOLVED
+
+
+def test_ucs_unsolved_total_cost_is_inf():
+    engine = FakeGraphEngine({"A": [("x", "B")], "B": []}, start="A", goals=["Z"])
+    assert UCSSolver(engine).solve().total_cost == float("inf")
+
+
+def test_ucs_peak_memory_positive_when_measured():
+    assert UCSSolver(diamond_graph()).solve().peak_memory > 0
