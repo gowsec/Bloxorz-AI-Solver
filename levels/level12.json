@@ -1,0 +1,22 @@
+{
+  "name": "Level 12: Soft and Heavy Bridges",
+  "grid": [
+    "S###..G"
+  ],
+  "bridges": [
+    { "id": 0, "pos": [0, 4], "initial_open": false },
+    { "id": 1, "pos": [0, 5], "initial_open": false }
+  ],
+  "switches": [
+    {
+      "pos": [0, 1],
+      "type": "soft",
+      "effect": { "mode": "set_open", "bridges": [0] }
+    },
+    {
+      "pos": [0, 3],
+      "type": "heavy",
+      "effect": { "mode": "set_open", "bridges": [1] }
+    }
+  ]
+}

@@ -31,7 +31,7 @@ Dự án cài đặt lại trò chơi **Bloxorz** (có giao diện đồ họa) 
 
 - Khối 1×1×2 với ba tư thế (đứng, nằm ngang, nằm dọc) và bốn hướng lăn.
 - Phát hiện nước đi sai (rơi khỏi bàn, rơi xuống ô trống) và phát hiện thắng (khối đứng trên ô đích).
-- Ô nâng cao: ô dễ vỡ, cầu, công tắc mềm (soft), công tắc nặng (heavy), công tắc tách (split) với cơ chế tách và ghép khối; hai kiểu tác động lên cầu là toggle và permanent.
+- Ô nâng cao: ô dễ vỡ, cầu, công tắc mềm (soft), công tắc nặng (heavy), công tắc tách (split) với cơ chế tách và ghép khối; tác động lên cầu gồm `toggle`, `set_open` và `set_close`.
 - Màn chơi nạp từ file JSON, dùng chung cho game và mọi solver.
 
 **Bộ giải**
@@ -259,7 +259,9 @@ Cầu và công tắc khai báo trong danh sách riêng. Ví dụ:
 }
 ```
 
-Loại công tắc: `soft`, `heavy`, `split`. Chế độ tác động lên cầu: `toggle`, `set_open`, `set_close`. Công tắc `split` dùng `split_targets` thay cho `effect`. Schema chi tiết và các điều kiện kiểm tra khi nạp xem tại `levels/README.md` và mục 7 của `docs/architecture.md`.
+Loại công tắc: `soft`, `heavy`, `split`. Chế độ tác động lên cầu: `toggle`, `set_open`, `set_close`. Công tắc `split` dùng `split_targets` thay cho `effect`. Schema chi tiết và các điều kiện kiểm tra khi nạp xem tại mục 7 của `docs/architecture.md`.
+
+Hai level kiểm thử cơ chế nâng cao là `levels/level12.json` (soft/heavy và nhiều cầu) và `levels/level13.json` (tách/di chuyển/ghép khối).
 
 ---
 

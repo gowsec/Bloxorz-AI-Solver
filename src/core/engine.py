@@ -2,9 +2,9 @@ from src.core.board import Level, SwitchType
 from src.core.constants import Direction, Orientation, Outcome, Pos
 from src.core.move import Action, move_block
 from src.core.state import BlockPose, SplitPose, State, cells
-from src.mechanics.bridge import apply_effect, initial_bridges
+from src.mechanics.bridge import initial_bridges
 from src.mechanics.fragile import support_failure
-from src.mechanics.split import merge_if_adjacent
+from src.mechanics.split import merge_if_adjacent, split_block
 from src.mechanics.switch import activated_switches, apply_switch_effects
 
 
@@ -62,7 +62,11 @@ class Engine:
             None,
         )
         if split_switch is not None:
-            moved_pose = SplitPose(*split_switch.split_targets)
+            if split_switch.split_targets is None:
+                raise ValueError("Split switch must define split_targets")
+            if not isinstance(moved_pose, BlockPose):
+                raise ValueError("Only an intact block can activate a split switch")
+            moved_pose = split_block(moved_pose, split_switch.split_targets)
         elif was_split:
             moved_pose = merge_if_adjacent(moved_pose)
 
