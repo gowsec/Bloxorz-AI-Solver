@@ -2,8 +2,9 @@ import time
 import tracemalloc
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, Callable
 
+from src.solvers.costs import step_cost
 from src.solvers.result import SolverResult
 
 STATUS_SOLVED = "solved"
@@ -41,10 +42,12 @@ class BaseSolver(ABC):
         engine: Any,
         node_limit: Optional[int] = None, # Sửa tên tham số
         time_limit: Optional[float] = None,
+        cost_fn: Optional[Callable[..., float]] = None, # Thêm để viết hàm UCS
     ):
         self.engine = engine
         self.node_limit = node_limit
         self.time_limit = time_limit
+        self.cost_fn = cost_fn # Thêm mới
         self._deadline: Optional[float] = None
 
     @abstractmethod
@@ -57,6 +60,24 @@ class BaseSolver(ABC):
         
         if self._deadline is not None and time.perf_counter() >= self._deadline:
             raise SearchLimitReached(STATUS_TIMEOUT)
+    def _resolve_cost_fn(self) -> Callable[..., float]:
+        """Hàm chi phí dùng cho UCS, A* và total_cost của mọi solver.
+
+        Ưu tiên: cost_fn truyền vào; nếu không thì costs.step_cost cho engine Bloxorz
+        (có thuộc tính `level`); engine khác (đồ thị giả trong test) tính mỗi bước 1.0.
+        """
+        if self.cost_fn is not None:
+            return self.cost_fn
+        if hasattr(self.engine, "level"):
+            return step_cost
+        return lambda engine, state, action, next_state: 1.0
+
+    def _path_cost(self, states: list[Any], actions: list[Any]) -> float:
+        cost_fn = self._resolve_cost_fn()
+        total = 0.0
+        for i, action in enumerate(actions):
+            total += cost_fn(self.engine, states[i], action, states[i + 1])
+        return total
 
     def solve(self, start: Any = None, measure_memory: bool = True) -> SolverResult:
         if start is None:
@@ -98,7 +119,7 @@ class BaseSolver(ABC):
         solution_length = len(actions)
         
         # Sửa lỗi chi phí bằng 0 khi thất bại
-        total_cost = float(solution_length) if status == STATUS_SOLVED else float("inf") # TODO: Cập nhật costs.py vào 18/10
+        total_cost = self._path_cost(states, actions) if status == STATUS_SOLVED else float("inf") #Sửa lại dòng này
         
         return SolverResult(
             algorithm=self.name,
