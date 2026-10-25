@@ -381,3 +381,25 @@ def test_closed_bridge_blocks_and_open_bridge_supports():
         level = make_level(("S#.G",), {0: Bridge((0, 2), open_)})
         _, outcome = Engine(level).try_step(Engine(level).initial_state(), Action(Direction.RIGHT))
         assert outcome is expected
+
+def test_split_cube_does_not_trigger_split_switch():
+    split = Switch((0, 1), SwitchType.SPLIT, split_targets=((1, 0), (1, 3)))
+    level = make_level(("S##G", "####"), switches={(0, 1): split})
+    state = State(SplitPose((0, 0), (0, 3)), 0)
+
+    next_state, outcome = Engine(level).try_step(state, Action(Direction.RIGHT, cube=0))
+
+    assert outcome is Outcome.OK
+    assert next_state.pose == SplitPose((0, 1), (0, 3))
+
+
+def test_heavy_switch_ignores_split_cube():
+    effect = Effect.create(EffectMode.SET_OPEN, (0,))
+    heavy = Switch((0, 1), SwitchType.HEAVY, effect=effect)
+    level = make_level(("S##.G", "#####"), {0: Bridge((0, 3), False)}, {(0, 1): heavy})
+    state = State(SplitPose((0, 0), (0, 4)), 0)
+
+    next_state, outcome = Engine(level).try_step(state, Action(Direction.RIGHT, cube=0))
+
+    assert outcome is Outcome.OK
+    assert next_state.bridges == 0

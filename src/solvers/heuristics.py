@@ -24,12 +24,12 @@ import itertools
 import math
 
 from src.core.board import SwitchType
-from src.core.constants import Direction, Orientation
+from src.core.constants import Direction, Orientation, Tile
 from src.core.move import move_block
 from src.core.state import BlockPose, SplitPose, State, cells
 from src.solvers.costs import C_MIN, FRAGILE_TILE, roll_cost
 
-VOID_TILE = "."  # ký tự ô trống trong level.terrain
+VOID_TILE = Tile.VOID  # ký tự ô trống trong level.terrain (lấy từ core/constants.py)
 SPLIT_MIN_REMAINING = 2 * C_MIN
 
 
