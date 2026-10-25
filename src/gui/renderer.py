@@ -3,7 +3,7 @@ from __future__ import annotations
 import pygame
 from src.core.board import Level
 from src.core.constants import Orientation
-from src.core.state import BlockPose, SplitPose, State, cells
+from src.core.state import BlockPose, SplitPose, State
 
 BACKGROUND = (17, 24, 39)
 TEXT = (230, 237, 247)
@@ -24,7 +24,8 @@ class Renderer:
         self.font = pygame.font.Font(None, 24)
 
     def draw(self, screen: pygame.Surface, level: Level, state: State | None = None,
-             block_offset: tuple[float, float] = (0, 0), message: str = "") -> None:
+             block_offset: tuple[float, float] = (0, 0), message: str = "",
+             selected_cube: int = 0, cube_offsets=((0.0, 0.0), (0.0, 0.0))) -> None:
         width, height = screen.get_size()
         canvas = pygame.Surface((max(640, width), max(520, height)))
         canvas.fill(BACKGROUND)
@@ -57,7 +58,6 @@ class Renderer:
         tiles = sorted(set(tiles))
         for row, col in tiles:
             polygon((11, 17, 29), [(x+8, y+12) for x, y in diamond(row, col, z=-0.3)], None)
-        block_cells = set(cells(state.pose)) if state else {level.start}
         for row, col in sorted(tiles, key=lambda pos: (sum(pos), pos[0])):
             tile = level.terrain[row][col]
             bridge_id = level.bridge_at.get((row, col))
@@ -97,20 +97,18 @@ class Renderer:
                     polygon((221,177,116), [front[0],front[1],back[1],back[0]])
                     pygame.draw.line(canvas, (103,68,40), front[1], front[2], 1)
             else:
-                for r,c in (pose.a, pose.b):
-                    base=diamond(r,c,0,.02); cap=diamond(r,c,0,1)
-                    polygon(BLOCK,[cap[1],cap[2],base[2],base[1]])
-                    polygon((221,177,116),cap)
-        canvas.blit(self.font.render('Arrow keys: Move   Esc: Exit', True, MUTED), (32, h-40))
+                for index, (r, c) in enumerate((pose.a, pose.b)):
+                    dr, dc = cube_offsets[index]
+                    base = diamond(r + dr, c + dc, 0, .02)
+                    cap = diamond(r + dr, c + dc, 0, 1)
+                    color = (238, 193, 126) if index == selected_cube else (221, 177, 116)
+                    polygon(BLOCK, [cap[1], cap[2], base[2], base[1]])
+                    polygon(color, cap)
         if message:
             label = self.title_font.render(message, True, GOAL if 'win' in message.lower() else (255,120,120))
             canvas.blit(label, label.get_rect(center=(w//2, 65)))
         if canvas.get_size() != screen.get_size():
             canvas = pygame.transform.smoothscale(canvas, screen.get_size())
         screen.blit(canvas, (0,0))
-
-
-
-
 
 
