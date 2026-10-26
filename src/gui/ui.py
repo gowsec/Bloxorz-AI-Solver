@@ -31,8 +31,9 @@ class UI:
             surface.blit(text, text.get_rect(center=rect.center))
             x += width + 8
 
-        status = "B: Solve BFS   D: Replay   Space: Switch block"
-        surface.blit(self.small_font.render(status, True, MUTED), (18, h - 48))
+        surface.blit(self.small_font.render("B: BFS   F: DFS   U: UCS   A: A*", True, MUTED), (18, h - 48))
+        surface.blit(self.small_font.render("D: Replay   R: Restart   N: New game   Space: Switch block", True, MUTED), (18, h - 28))
+        # surface.blit(self.small_font.render(status, True, MUTED), (18, h - 48))
         if result is not None:
             self._draw_stats(surface, result)
 

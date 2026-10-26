@@ -3,6 +3,8 @@ from pathlib import Path
 
 import pygame
 
+from src.core.state import BlockPose, SplitPose
+
 from src.core.constants import Outcome
 from src.core.engine import Engine
 from src.core.move import Action
@@ -130,6 +132,12 @@ class Game:
                                 reset(chosen)
                         elif event.key == pygame.K_b:
                             solve("Solve BFS")
+                        elif event.key == pygame.K_f:
+                            solve("Solve DFS")
+                        elif event.key == pygame.K_u:
+                            solve("Solve UCS")
+                        elif event.key == pygame.K_a:
+                            solve("Solve A*")
                         elif event.key == pygame.K_d:
                             start_replay()
                         elif event.key == pygame.K_SPACE and isinstance(state.pose, SplitPose) and not replaying:
@@ -141,17 +149,27 @@ class Game:
                                     action = Action(action.direction, selected_cube)
                                 next_state, outcome = engine.try_step(state, action)
                                 if outcome == Outcome.OK:
-                                    animation.begin(state.pose, next_state.pose, action.cube)
+                                    if engine.is_goal(next_state):
+                                        animation.begin_fall(state.pose, next_state.pose, "goal")
+                                        game_over = True
+                                        message = "You win!"
+                                    else:
+                                        animation.duration = 0.18
+                                        animation.begin(state.pose, next_state.pose, action.cube)
                                     state = next_state
                                     if not isinstance(state.pose, SplitPose):
                                         selected_cube = 0
-                                    if engine.is_goal(state):
-                                        game_over = True
-                                        message = "You win!"
-                                else:
+                                elif outcome in (Outcome.FELL, Outcome.FRAGILE_BROKE):
+                                    from src.core.move import move_block
+                                    if isinstance(state.pose, BlockPose):
+                                        fall_pose = move_block(state.pose, action.direction)
+                                    else:
+                                        fall_pose = state.pose
+                                    kind = "edge" if outcome == Outcome.FELL else "straight"
+                                    animation.begin_fall(state.pose, fall_pose, kind)
                                     game_over = True
                                     message = "You fell! Press R to restart."
-
+                            
                 if replaying and not animation.active:
                     if replay_index < len(solution):
                         action = solution[replay_index]
@@ -161,7 +179,10 @@ class Game:
                             game_over = True
                             message = "Replay stopped: invalid solver action."
                         else:
-                            animation.begin(state.pose, next_state.pose, action.cube)
+                            if engine.is_goal(next_state):
+                                animation.begin_fall(state.pose, next_state.pose, "goal")
+                            else:
+                                animation.begin(state.pose, next_state.pose, action.cube)
                             state = next_state
                             selected_cube = action.cube or 0
                             replay_index += 1
@@ -171,7 +192,7 @@ class Game:
                         message = "You win! Replay complete."
 
                 renderer.draw(
-                    screen, level, state, animation.offset(), message,
+                    screen, level, state, animation, message,
                     selected_cube, animation.cube_offsets(),
                 )
                 ui.draw(screen, result, selected_cube, replaying)

@@ -9,20 +9,29 @@ class RollAnimation:
         self.duration = duration
         self.started = 0.0
         self.moving_cube: int | None = None
+        self.old_pose = None
+        self.fall_pose = None
         self.start = None
         self.end = None
         self.start_cubes = None
         self.end_cubes = None
+        self.is_falling = False
 
     def reset(self):
         self.started = 0.0
         self.moving_cube = None
         self.start = self.end = None
         self.start_cubes = self.end_cubes = None
+        self.old_pose = None
+        self.fall_pose = None
+        self.is_falling = False
+        self.duration = 0.18
 
     def begin(self, old_pose, new_pose, cube: int | None = None):
+        self.is_falling = False
         self.started = time.monotonic()
         self.moving_cube = cube
+        self.old_pose = old_pose
         self.start = self.end = None
         self.start_cubes = self.end_cubes = None
         if isinstance(old_pose, BlockPose) and isinstance(new_pose, BlockPose):
@@ -34,8 +43,9 @@ class RollAnimation:
 
     @property
     def active(self) -> bool:
-        return (self.start is not None or self.start_cubes is not None) and time.monotonic() - self.started < self.duration
-
+        # return (self.start is not None or self.start_cubes is not None) and time.monotonic() - self.started < self.duration
+        has_started = self.start is not None or self.start_cubes is not None or getattr(self, 'is_falling', False)
+        return has_started and (time.monotonic() - self.started < self.duration)
     def _progress(self) -> float:
         t = min(1.0, (time.monotonic() - self.started) / self.duration)
         return t * t * (3 - 2 * t)
@@ -59,3 +69,21 @@ class RollAnimation:
             offsets[index] = (start[0] + (end[0] - start[0]) * t - end[0],
                               start[1] + (end[1] - start[1]) * t - end[1])
         return offsets[0], offsets[1]
+    @property                   # <--- THÊM HÀM NÀY XUỐNG CUỐI
+    def progress(self) -> float:
+        if not self.active:
+            return 1.0
+        return self._progress()
+    def begin_fall(self, old_pose, fall_pose, kind: str = "edge"):
+        """kind: 'edge' = nghiêng qua viền map rồi rơi; 'straight' = lăn xong rồi rơi thẳng."""
+        self.started = time.monotonic()
+        self.old_pose = old_pose
+        self.fall_pose = fall_pose
+        self.fall_kind = kind
+        self.is_falling = True
+        self.duration = 1.0 if kind == "goal" else 0.8
+
+    @property
+    def fall_t(self) -> float:
+        """Tiến trình tuyến tính 0..1 (không easing) để rơi nhanh dần."""
+        return min(1.0, (time.monotonic() - self.started) / self.duration)
