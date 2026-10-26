@@ -26,6 +26,9 @@ SOLVERS = {
     "Solve A*": AStarSolver,
 }
 
+# Solver replays use a longer roll than manual input so each move is easier to follow.
+SOLVER_REPLAY_DURATION = 0.30
+
 
 class Game:
     def __init__(self, level=None):
@@ -182,6 +185,7 @@ class Game:
                             if engine.is_goal(next_state):
                                 animation.begin_fall(state.pose, next_state.pose, "goal")
                             else:
+                                animation.duration = SOLVER_REPLAY_DURATION
                                 animation.begin(state.pose, next_state.pose, action.cube)
                             state = next_state
                             selected_cube = action.cube or 0

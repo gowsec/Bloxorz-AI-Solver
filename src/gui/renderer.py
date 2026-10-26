@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 import pygame
-from src.core.board import Level
+from src.core.board import Level, SwitchType
 from src.core.constants import Orientation
 from src.core.state import BlockPose, SplitPose, State
 
@@ -70,6 +70,7 @@ class Renderer:
         canvas.fill(BACKGROUND)
         w, h = canvas.get_size()
         canvas.blit(self.title_font.render(level.name, True, TEXT), (32, 24))
+        canvas.blit(self.font.render("Switches: S = soft   H = heavy   X = split", True, MUTED), (32, 56))
         bounds = [project(r, c, z) for r in (0, level.rows) for c in (0, level.cols) for z in (-0.3, 0)]
         start = level.start
         bounds.extend(project(start[0] + dr, start[1] + dc, 2) for dr, dc in ((0, 0), (0, 1), (1, 1), (1, 0)))
@@ -144,7 +145,23 @@ class Renderer:
                 pygame.draw.lines(canvas, (146, 83, 32), False,
                                   [point(row+dr, col+dc, .01 + dz) for dr, dc in ((.15, .4), (.42, .52), (.5, .35), (.8, .62))], 2)
             if (row, col) in level.switches:
-                pygame.draw.circle(canvas, (40, 90, 112), point(row+.5, col+.5, .04), max(3, round(scale*.12)))
+                switch_type = level.switches[(row, col)].type
+                switch_colors = {
+                    SwitchType.SOFT: (61, 190, 151),
+                    SwitchType.HEAVY: (230, 126, 72),
+                    SwitchType.SPLIT: (157, 112, 224),
+                }
+                switch_labels = {
+                    SwitchType.SOFT: "S",
+                    SwitchType.HEAVY: "H",
+                    SwitchType.SPLIT: "X",
+                }
+                center = point(row + .5, col + .5, .06)
+                radius = max(7, round(scale * .17))
+                pygame.draw.circle(canvas, switch_colors[switch_type], center, radius)
+                pygame.draw.circle(canvas, (20, 28, 42), center, radius, 1)
+                marker = self.font.render(switch_labels[switch_type], True, (255, 255, 255))
+                canvas.blit(marker, marker.get_rect(center=center))
 
         # ---------- Block ----------
         if state:
@@ -239,6 +256,44 @@ class Renderer:
                     pygame.draw.polygon(mask, (255, 255, 255, 255), region)
                     target.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
                     canvas.blit(target, (0, 0))
+
+            if isinstance(state.pose, SplitPose):
+                # Each separated piece is a 1x1x1 cube. Highlight the cube that
+                # receives keyboard input and apply its in-flight animation offset.
+                for index, cube_pos in sorted(
+                    enumerate((state.pose.a, state.pose.b)),
+                    key=lambda item: (sum(item[1]), item[1]),
+                ):
+                    dr, dc = cube_offsets[index]
+                    row, col = cube_pos[0] + dr, cube_pos[1] + dc
+                    cube = [
+                        (row, col, 0), (row, col + 1, 0),
+                        (row + 1, col + 1, 0), (row + 1, col, 0),
+                        (row, col, 1), (row, col + 1, 1),
+                        (row + 1, col + 1, 1), (row + 1, col, 1),
+                    ]
+                    pts = [point(r, c, z) for r, c, z in cube]
+                    selected = index == selected_cube
+                    faces = [
+                        (((190, 124, 28) if selected else (125, 80, 43)), [0, 1, 5, 4]),
+                        (((190, 124, 28) if selected else (125, 80, 43)), [0, 3, 7, 4]),
+                        (((242, 174, 48) if selected else BLOCK), [1, 2, 6, 5]),
+                        (((242, 174, 48) if selected else BLOCK), [3, 2, 6, 7]),
+                        (((255, 232, 145) if selected else (221, 177, 116)), [4, 5, 6, 7]),
+                        ((100, 80, 60), [0, 1, 2, 3]),
+                    ]
+                    faces.sort(key=lambda face: sum(sum(cube[i]) for i in face[1]))
+                    for color, indices in faces:
+                        polygon(color, [pts[i] for i in indices])
+                    if selected:
+                        edges = (
+                            (0, 1), (1, 2), (2, 3), (3, 0),
+                            (4, 5), (5, 6), (6, 7), (7, 4),
+                            (0, 4), (1, 5), (2, 6), (3, 7),
+                        )
+                        for start, end in edges:
+                            pygame.draw.line(canvas, (255, 221, 92), pts[start], pts[end], 5)
+                            pygame.draw.line(canvas, (255, 250, 207), pts[start], pts[end], 2)
 
         if message:
             label = self.title_font.render(message, True, GOAL if 'win' in message.lower() else (255, 120, 120))
