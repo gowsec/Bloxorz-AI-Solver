@@ -1,0 +1,35 @@
+{
+  "name": "Level 15: Double Toggle",
+  "grid": [
+    "S##..#",
+    "###..#",
+    "###..#",
+    ".###..",
+    ".#G#..",
+    ".###.."
+  ],
+  "bridges": [
+    { "id": 0, "pos": [0, 3], "initial_open": false },
+    { "id": 1, "pos": [0, 4], "initial_open": false },
+    { "id": 2, "pos": [1, 3], "initial_open": false },
+    { "id": 3, "pos": [1, 4], "initial_open": false },
+    { "id": 4, "pos": [3, 4], "initial_open": false },
+    { "id": 5, "pos": [3, 5], "initial_open": false },
+    { "id": 6, "pos": [4, 4], "initial_open": false },
+    { "id": 7, "pos": [4, 5], "initial_open": false },
+    { "id": 8, "pos": [5, 4], "initial_open": false },
+    { "id": 9, "pos": [5, 5], "initial_open": false }
+  ],
+  "switches": [
+    {
+      "pos": [2, 2],
+      "type": "soft",
+      "effect": { "mode": "toggle", "bridges": [0, 1, 2, 3] }
+    },
+    {
+      "pos": [0, 5],
+      "type": "soft",
+      "effect": { "mode": "toggle", "bridges": [4, 5, 6, 7, 8, 9] }
+    }
+  ]
+}
