@@ -1,10 +1,21 @@
 {
-  "name": "Level 8: Thin Ice",
+  "name": "Level 8: Heavy Lifting",
   "grid": [
-    "S#######",
-    "##FF#FF#",
-    "##F#F#F#",
-    "##FF#FF#",
-    "#######G"
+    ".........",
+    "#FF##....",
+    ".FFF#....",
+    "###.#.#.#",
+    "#F.#FFF.F",
+    "##S#F.FFG",
+    "###..F###",
+    "..#..#..."
+  ],
+  "bridges": [
+    { "id": 0, "pos": [2,0], "initial_open": false },
+    { "id": 1, "pos": [5,5], "initial_open": false },
+    { "id": 2, "pos": [7,3], "initial_open": false }
+  ],
+  "switches": [
+    { "pos": [5,1], "type": "heavy", "effect": { "mode": "set_open", "bridges": [0,1,2] } }
   ]
 }

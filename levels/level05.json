@@ -1,11 +1,15 @@
 {
-  "name": "Level 5: Careful Steps",
-  "grid": [
-    "S####..",
-    "##FF#..",
-    "..#F#..",
-    "..#F###",
-    "..#FFG#",
-    "..#####"
-  ]
+	"name": "Level 5: Careful Steps",
+	"grid": [
+		".#FFFFF#F",
+		"F#F##F###",
+		"#FF.F#.FF",
+		"#FFF#.F#G",
+		"#.F#..F##",
+		".FF#FF.F#",
+		".##.FF.FF",
+		"###.##.FF",
+		".FF.####F",
+		".F##F#S.."
+	]
 }

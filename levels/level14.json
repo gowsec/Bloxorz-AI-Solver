@@ -1,11 +1,15 @@
 {
   "name": "Level 14: Fragile Madness",
   "grid": [
-    "S#F#",
-    "F#F#",
-    "#F#F",
-    "#F#F",
-    "F#F#",
-    "F#FG"
+    "FF#.F.#FFFF",
+    "F#F##F##.##",
+    "FFF####FF##",
+    "#F.FF..##..",
+    "#S#F###FF##",
+    "F##..###F##",
+    "#F......F#F",
+    "F#.F#..#FF.",
+    "#####G..#FF",
+    ".FFF..FF###"
   ]
 }
