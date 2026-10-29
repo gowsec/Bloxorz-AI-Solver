@@ -1,12 +1,24 @@
 {
-  "name": "Level 9: Fragile Core",
+  "name": "Level 9: Point of No Return",
   "grid": [
-    "S#######",
-    "##F#...#",
-    "##F#G###",
-    "##F#...#",
-    "##F#####",
-    "##F.....",
-    "########"
+    "##......",
+    "######..",
+    "####..#.",
+    "#.G...##",
+    ".###.###",
+    "..####.S",
+    "...##.##"
+  ],
+  "bridges": [
+    { "id": 0, "pos": [0,4], "initial_open": false },
+    { "id": 1, "pos": [3,3], "initial_open": true },
+    { "id": 2, "pos": [4,4], "initial_open": true },
+    { "id": 3, "pos": [5,6], "initial_open": false },
+    { "id": 4, "pos": [6,5], "initial_open": true }
+  ],
+  "switches": [
+    { "pos": [1,1], "type": "heavy", "effect": { "mode": "set_open", "bridges": [0,3] } },
+    { "pos": [2,6], "type": "soft", "effect": { "mode": "toggle", "bridges": [1,2,4,0,3] } },
+    { "pos": [6,4], "type": "soft", "effect": { "mode": "set_close", "bridges": [1,2,4] } }
   ]
 }

@@ -1,10 +1,13 @@
 {
-  "name": "Level 4: Fragile Floor",
-  "grid": [
-    "..#.#.F",
-    "##SF#.F",
-    "F#FFG#.",
-    "#F.####",
-    "####F##"
-  ]
+	"name": "Level 4: Fragile Floor",
+	"grid": [
+		"F##S##FF",
+		"FF#FFF##",
+		"###.FF.#",
+		"#F.#.##F",
+		".F#F#.##",
+		".FF#F#F#",
+		"...FFFF.",
+		"....#G##"
+	]
 }

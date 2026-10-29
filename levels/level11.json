@@ -1,25 +1,23 @@
 {
-  "name": "Level 11: Fragile Twist",
+  "name": "Level 11: Heavy Merge",
   "grid": [
-    "S###",
-    "###F",
-    "F###",
-    "###.",
-    "....",
-    ".###",
-    "F###",
-    "###F",
-    "###G"
+    "..##.F..",
+    "F#FG.F.#",
+    "FFF.#F.F",
+    "##...FF#",
+    "#....FFF",
+    "#...##FF",
+    ".S#####F",
+    "##.#.F#F",
+    "....#F##"
   ],
   "bridges": [
-    { "id": 0, "pos": [4, 1], "initial_open": false },
-    { "id": 1, "pos": [4, 2], "initial_open": false }
+    { "id": 0, "pos": [2,6], "initial_open": false },
+    { "id": 1, "pos": [4,3], "initial_open": false },
+    { "id": 2, "pos": [6,0], "initial_open": false }
   ],
   "switches": [
-    {
-      "pos": [0, 3],
-      "type": "soft",
-      "effect": { "mode": "toggle", "bridges": [0, 1] }
-    }
+    { "pos": [6,2], "type": "heavy", "effect": { "mode": "set_open", "bridges": [0,1,2] } },
+    { "pos": [8,4], "type": "split", "split_targets": [[8,6],[0,3]] }
   ]
 }

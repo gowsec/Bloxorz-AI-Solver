@@ -1,10 +1,18 @@
 {
-  "name": "Level 10: The Great Wall",
+  "name": "Level 10: Split Decision",
   "grid": [
-    "S####",
-    "####.",
-    "##F##",
-    ".####",
-    "####G"
+    "#.#####.#",
+    "###.....#",
+    ".##.....G",
+    ".S#......",
+    "###......"
+  ],
+  "bridges": [
+    { "id": 0, "pos": [0,7], "initial_open": false },
+    { "id": 1, "pos": [3,7], "initial_open": false }
+  ],
+  "switches": [
+    { "pos": [0,5], "type": "split", "split_targets": [[2,1],[0,2]] },
+    { "pos": [4,0], "type": "soft", "effect": { "mode": "toggle", "bridges": [0,1] } }
   ]
 }
