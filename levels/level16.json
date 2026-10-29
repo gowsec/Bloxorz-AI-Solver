@@ -25,6 +25,7 @@
   "switches": [
     { "pos": [3,3], "type": "soft", "effect": { "mode": "toggle", "bridges": [3,6] } },
     { "pos": [7,2], "type": "soft", "effect": { "mode": "set_close", "bridges": [6,0] } },
-    { "pos": [8,6], "type": "heavy", "effect": { "mode": "set_open", "bridges": [2,7,0] } }
+    { "pos": [8,6], "type": "heavy", "effect": { "mode": "set_open", "bridges": [2,7,0] } },
+    { "pos": [5,4], "type": "split", "split_targets": [[5,0], [5,6]] }
   ]
 }

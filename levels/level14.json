@@ -17,6 +17,7 @@
     { "id": 1, "pos": [6,7], "initial_open": false }
   ],
   "switches": [
-    { "pos": [2,10], "type": "soft", "effect": { "mode": "toggle", "bridges": [0,1] } }
+    { "pos": [2,10], "type": "soft", "effect": { "mode": "toggle", "bridges": [0,1] } },
+    { "pos": [4,4], "type": "split", "split_targets": [[2,5], [5,2]] }
   ]
 }
