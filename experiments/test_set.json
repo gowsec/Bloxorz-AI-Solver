@@ -6,20 +6,20 @@
     ],
     "Group 2 - Fragile": [
         "level_04",
-        "level_05",
-        "level_06",
-        "level_07",
-        "level_08",
-        "level_09",
-        "level_10",
-        "level_14"
+        "level_05"
     ],
     "Group 3 - Switch": [
-        "level_11",
+        "level_06",
+        "level_07",
+        "level_09",
+        "level_10",
         "level_12",
         "level_13"
     ],
     "Group 4 - Combined": [
+        "level_08",
+        "level_11",
+        "level_14",
         "level_15",
         "level_16"
     ]
