@@ -66,21 +66,18 @@ def natural_key(text: str) -> list:
 
 
 def available_solvers() -> dict[str, type]:
-    """Các solver đã có trong dự án. UCS và A* tự xuất hiện khi file của chúng được thêm."""
+    """Các solver đã có trong dự án."""
+    from src.solvers.astar import AStarSolver
     from src.solvers.bfs import BFSSolver
     from src.solvers.dfs import DFSSolver
+    from src.solvers.ucs import UCSSolver
 
-    registry: dict[str, type] = {"bfs": BFSSolver, "dfs": DFSSolver}
-    optional = (
-        ("ucs", "src.solvers.ucs", "UCSSolver"),
-        ("astar", "src.solvers.astar", "AStarSolver"),
-    )
-    for key, module, cls in optional:
-        try:
-            registry[key] = getattr(importlib.import_module(module), cls)
-        except (ImportError, AttributeError):
-            pass
-    return registry
+    return {
+        "bfs": BFSSolver,
+        "dfs": DFSSolver,
+        "ucs": UCSSolver,
+        "astar": AStarSolver,
+    }
 
 
 def validate(engine: Any, result: Any) -> bool:
