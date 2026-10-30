@@ -1,13 +1,17 @@
-# Python virtual environment
+# Python virtual environments
 .venv/
 venv/
 
 # Python cache
 __pycache__/
-*.pyc
+*.py[cod]
+.pytest_cache/
 
 # Environment variables
 .env
 
+# Temporary files
+tmp/
+
+# macOS
 .DS_Store
-.pytest_cache

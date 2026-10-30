@@ -1,0 +1,26 @@
+{
+  "name": "Level 12: Heavy Heavy Logic",
+  "grid": [
+    "S#..#",
+    "##..#",
+    "##..#",
+    ".####",
+    ".#G##",
+    ".####"
+  ],
+  "bridges": [
+    { "id": 0, "pos": [0, 2], "initial_open": false },
+    { "id": 1, "pos": [1, 2], "initial_open": false },
+    { "id": 2, "pos": [2, 2], "initial_open": false },
+    { "id": 3, "pos": [0, 3], "initial_open": false },
+    { "id": 4, "pos": [1, 3], "initial_open": false },
+    { "id": 5, "pos": [2, 3], "initial_open": false }
+  ],
+  "switches": [
+    {
+      "pos": [5, 1],
+      "type": "heavy",
+      "effect": { "mode": "set_open", "bridges": [0, 1, 2, 3, 4, 5] }
+    }
+  ]
+}

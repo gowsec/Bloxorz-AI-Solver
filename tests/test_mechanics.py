@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from src.core.board import Bridge, Effect, EffectMode, Level, Switch, SwitchType
@@ -6,6 +8,9 @@ from src.core.engine import Engine
 from src.core.move import Action
 from src.core.state import BlockPose, SplitPose, State
 from src.mechanics.bridge import apply_effect, initial_bridges
+from src.mechanics.split import merge_if_adjacent, split_block
+from src.solvers.bfs import BFSSolver
+from src.utils.json_loader import load_level
 
 
 def make_level(
@@ -31,6 +36,47 @@ def test_initial_bridges_uses_bridge_ids_as_bit_positions():
     level = make_level(("S..G",), {0: Bridge((0, 1), True), 1: Bridge((0, 2), False)})
 
     assert initial_bridges(level) == 0b01
+
+
+def test_split_block_moves_standing_block_to_targets():
+    pose = BlockPose(2, 3, Orientation.STANDING)
+    targets = ((0, 0), (2, 3))
+
+    assert split_block(pose, targets) == SplitPose(*targets)
+
+
+def test_split_block_rejects_nonstanding_block():
+    pose = BlockPose(2, 3, Orientation.HORIZONTAL)
+
+    with pytest.raises(ValueError, match="Only a standing block can split"):
+        split_block(pose, ((0, 0), (2, 3)))
+
+
+@pytest.mark.parametrize(
+    ("pose", "expected"),
+    [
+        (SplitPose((1, 2), (1, 3)), BlockPose(1, 2, Orientation.HORIZONTAL)),
+        (SplitPose((2, 1), (3, 1)), BlockPose(2, 1, Orientation.VERTICAL)),
+    ],
+)
+def test_merge_if_adjacent_returns_block_pose(pose, expected):
+    assert merge_if_adjacent(pose) == expected
+
+
+def test_merge_if_not_adjacent_keeps_split_pose():
+    pose = SplitPose((0, 0), (2, 2))
+
+    assert merge_if_adjacent(pose) == pose
+
+
+def test_level11_soft_switch_opens_bridge():
+    level_path = Path(__file__).parents[1] / "levels" / "level11.json"
+    engine = Engine(load_level(level_path))
+
+    next_state, outcome = engine.try_step(engine.initial_state(), Action(Direction.RIGHT))
+
+    assert outcome is Outcome.OK
+    assert next_state.bridges & 1 == 1
 
 
 @pytest.mark.parametrize(
@@ -167,6 +213,52 @@ def test_soft_switch_activates_when_split_cube_moves_onto_it():
     assert next_state.pose == BlockPose(0, 1, Orientation.HORIZONTAL)
 
 
+def test_multiple_soft_switches_on_landing_cells_apply_all_bridge_effects():
+    level = make_level(
+        ("S##..G",),
+        {
+            0: Bridge((0, 3), False),
+            1: Bridge((0, 4), False),
+        },
+        {
+            (0, 1): Switch(
+                (0, 1),
+                SwitchType.SOFT,
+                effect=Effect.create(EffectMode.SET_OPEN, (0,)),
+            ),
+            (0, 2): Switch(
+                (0, 2),
+                SwitchType.SOFT,
+                effect=Effect.create(EffectMode.SET_OPEN, (1,)),
+            ),
+        },
+    )
+    engine = Engine(level)
+
+    state, outcome = engine.try_step(engine.initial_state(), Action(Direction.RIGHT))
+
+    assert outcome is Outcome.OK
+    assert state.bridges == 0b11
+
+
+def test_stationary_split_cube_does_not_retrigger_its_switch():
+    effect = Effect.create(EffectMode.TOGGLE, (0,))
+    level = make_level(
+        ("S####G",),
+        {0: Bridge((0, 5), False)},
+        {(0, 1): Switch((0, 1), SwitchType.SOFT, effect=effect)},
+    )
+    state = State(SplitPose((0, 1), (0, 3)), 0)
+
+    next_state, outcome = Engine(level).try_step(
+        state, Action(Direction.RIGHT, cube=1)
+    )
+
+    assert outcome is Outcome.OK
+    assert next_state.bridges == 0
+    assert next_state.pose == SplitPose((0, 1), (0, 4))
+
+
 def test_standing_on_fragile_tile_fails():
     level = make_level(("S##F",))
     state = State(BlockPose(0, 1, Orientation.HORIZONTAL), 0)
@@ -254,8 +346,60 @@ def test_invalid_action_for_blocked_state_is_reported():
     assert next_state is None
     assert outcome is Outcome.INVALID_ACTION
 
+
+def test_level12_uses_soft_and_heavy_switches_to_cross_both_bridges():
+    level_path = Path(__file__).parents[1] / "levels" / "level12.json"
+    engine = Engine(load_level(level_path))
+    state = engine.initial_state()
+
+    for _ in range(4):
+        state, outcome = engine.try_step(state, Action(Direction.RIGHT))
+        assert outcome is Outcome.OK
+
+    assert state.bridges == 0b11
+    assert engine.is_goal(state)
+
+
+def test_level13_splits_and_merges_after_cubes_move_adjacent():
+    level_path = Path(__file__).parents[1] / "levels" / "level13.json"
+    engine = Engine(load_level(level_path))
+    result = BFSSolver(engine).solve(measure_memory=False)
+
+    assert result.status == "solved"
+    assert any(isinstance(state.pose, SplitPose) for state in result.states)
+    assert engine.is_goal(result.states[-1])
+
+    state = engine.initial_state()
+    for action in result.path:
+        state, outcome = engine.try_step(state, action)
+        assert outcome is Outcome.OK
+    assert state == result.states[-1]
+
+
 def test_closed_bridge_blocks_and_open_bridge_supports():
     for open_, expected in ((False, Outcome.FELL), (True, Outcome.OK)):
         level = make_level(("S#.G",), {0: Bridge((0, 2), open_)})
         _, outcome = Engine(level).try_step(Engine(level).initial_state(), Action(Direction.RIGHT))
         assert outcome is expected
+
+def test_split_cube_does_not_trigger_split_switch():
+    split = Switch((0, 1), SwitchType.SPLIT, split_targets=((1, 0), (1, 3)))
+    level = make_level(("S##G", "####"), switches={(0, 1): split})
+    state = State(SplitPose((0, 0), (0, 3)), 0)
+
+    next_state, outcome = Engine(level).try_step(state, Action(Direction.RIGHT, cube=0))
+
+    assert outcome is Outcome.OK
+    assert next_state.pose == SplitPose((0, 1), (0, 3))
+
+
+def test_heavy_switch_ignores_split_cube():
+    effect = Effect.create(EffectMode.SET_OPEN, (0,))
+    heavy = Switch((0, 1), SwitchType.HEAVY, effect=effect)
+    level = make_level(("S##.G", "#####"), {0: Bridge((0, 3), False)}, {(0, 1): heavy})
+    state = State(SplitPose((0, 0), (0, 4)), 0)
+
+    next_state, outcome = Engine(level).try_step(state, Action(Direction.RIGHT, cube=0))
+
+    assert outcome is Outcome.OK
+    assert next_state.bridges == 0

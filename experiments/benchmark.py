@@ -8,7 +8,7 @@ Mỗi cặp (màn, thuật toán) chạy HAI lượt riêng:
 
 Chạy từ thư mục gốc dự án:
     python -m experiments.benchmark
-    python -m experiments.benchmark --levels "levels/*.json" --algorithms bfs,dfs \
+    python -m experiments.benchmark --levels "levels/*.json" --algorithms bfs,dfs,ucs,astar \
         --repeats 5 --time-limit 60 --out experiments/results/benchmark.csv
 
 CÁC CỘT CỦA FILE CSV (một dòng cho mỗi cặp màn x thuật toán)
@@ -37,7 +37,6 @@ import argparse
 import csv
 import gc
 import glob
-import importlib
 import os
 import statistics
 import sys
@@ -63,21 +62,18 @@ CSV_COLUMNS = [
 
 
 def available_solvers() -> dict[str, type]:
-    """Các solver đã có trong dự án. UCS và A* tự xuất hiện khi file của chúng được thêm."""
+    """Các solver của dự án, theo thứ tự chạy benchmark."""
+    from src.solvers.astar import AStarSolver #Thêm mới
     from src.solvers.bfs import BFSSolver
     from src.solvers.dfs import DFSSolver
+    from src.solvers.ucs import UCSSolver #Thêm mới
 
-    registry: dict[str, type] = {"bfs": BFSSolver, "dfs": DFSSolver}
-    optional = (
-        ("ucs", "src.solvers.ucs", "UCSSolver"),
-        ("astar", "src.solvers.astar", "AStarSolver"),
-    )
-    for key, module, cls in optional:
-        try:
-            registry[key] = getattr(importlib.import_module(module), cls)
-        except (ImportError, AttributeError):
-            pass
-    return registry
+    return { #Tạo lại kết quả trả về
+        "bfs": BFSSolver,
+        "dfs": DFSSolver,
+        "ucs": UCSSolver,
+        "astar": AStarSolver,
+    }
 
 
 def benchmark_one(
@@ -154,7 +150,11 @@ def run_benchmark(
     rows: list[dict[str, Any]] = []
     for level_name, engine in cases:
         for solver_cls in solver_classes:
-            row = benchmark_one(level_name, engine, solver_cls, repeats, node_limit, time_limit)
+            try:
+                row = benchmark_one(level_name, engine, solver_cls, repeats, node_limit, time_limit)
+            except Exception as e:
+                row = {c: "" for c in CSV_COLUMNS} | {
+                    "level": level_name, "algorithm": solver_cls.name, "status": f"error:{type(e).__name__}"}
             rows.append(row)
             if verbose:
                 print(

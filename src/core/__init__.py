@@ -1,1 +1,3 @@
-"""Core data types and game engine."""
+
+"""Game data and rules, independent of pygame."""
+

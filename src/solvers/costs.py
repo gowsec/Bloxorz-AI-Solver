@@ -23,11 +23,12 @@ Ràng buộc mà heuristics.py DỰA VÀO (đổi là phải rà lại chứng m
 """
 from __future__ import annotations
 
+from src.core.constants import Tile
 from src.core.state import BlockPose, cells
 
 BASE_COST = 1.0
 FRAGILE_PENALTY = 1.0
-FRAGILE_TILE = "F"  # ký tự ô dễ vỡ trong level.terrain
+FRAGILE_TILE = Tile.FRAGILE  # ký tự ô dễ vỡ trong level.terrain (lấy từ core/constants.py)
 
 # Chi phí nhỏ nhất của một nước đi. Vì phạt chỉ cộng thêm (>= 0) nên C_MIN = BASE_COST.
 C_MIN = BASE_COST

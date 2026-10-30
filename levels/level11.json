@@ -1,0 +1,25 @@
+{
+  "name": "Level 11: Fragile Twist",
+  "grid": [
+    "S###",
+    "###F",
+    "F###",
+    "###.",
+    "....",
+    ".###",
+    "F###",
+    "###F",
+    "###G"
+  ],
+  "bridges": [
+    { "id": 0, "pos": [4, 1], "initial_open": false },
+    { "id": 1, "pos": [4, 2], "initial_open": false }
+  ],
+  "switches": [
+    {
+      "pos": [0, 3],
+      "type": "soft",
+      "effect": { "mode": "toggle", "bridges": [0, 1] }
+    }
+  ]
+}
