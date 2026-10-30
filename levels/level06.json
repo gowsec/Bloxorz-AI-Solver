@@ -1,12 +1,23 @@
 {
-  "name": "Level 6: The Winding Bridge",
+  "name": "Level 6: The Toggle Bridge",
   "grid": [
-    "S###",
-    "####",
-    "###.",
-    ".###",
-    ".###",
-    "####",
-    "##FG"
+    ".......",
+    "##...#.",
+    "G##.##.",
+    "..#####",
+    "..#.##.",
+    "..####.",
+    "...S###",
+    "...#.##",
+    "...####",
+    "......#"
+  ],
+  "bridges": [
+    { "id": 0, "pos": [2,3], "initial_open": false },
+    { "id": 1, "pos": [6,1], "initial_open": false },
+    { "id": 2, "pos": [9,4], "initial_open": false }
+  ],
+  "switches": [
+    { "pos": [2,1], "type": "soft", "effect": { "mode": "toggle", "bridges": [0,1,2] } }
   ]
 }

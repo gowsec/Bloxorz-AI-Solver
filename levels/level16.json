@@ -1,48 +1,31 @@
 {
   "name": "Level 16: The Ultimate Challenge",
   "grid": [
-    "S####",
-    "#####",
-    ".....",
-    ".....",
-    "####.",
-    "####.",
-    "####.",
-    ".....",
-    "#####",
-    "####G"
+    "S####F#.#",
+    ".##F.##F.",
+    "F##F.#F.#",
+    "#..#.#.FF",
+    "FF#.F#F.#",
+    "#F.####.#",
+    "....F.#.F",
+    "#######.G",
+    "########.",
+    "F..#.###F"
   ],
   "bridges": [
-    { "id": 0, "pos": [2, 0], "initial_open": false },
-    { "id": 1, "pos": [2, 1], "initial_open": false },
-    { "id": 2, "pos": [2, 2], "initial_open": false },
-    { "id": 3, "pos": [3, 0], "initial_open": false },
-    { "id": 4, "pos": [3, 1], "initial_open": false },
-    { "id": 5, "pos": [3, 2], "initial_open": false },
-    { "id": 6, "pos": [4, 4], "initial_open": false },
-    { "id": 7, "pos": [5, 4], "initial_open": false },
-    { "id": 8, "pos": [6, 4], "initial_open": false },
-    { "id": 9, "pos": [7, 0], "initial_open": false },
-    { "id": 10, "pos": [7, 1], "initial_open": false },
-    { "id": 11, "pos": [7, 2], "initial_open": false },
-    { "id": 12, "pos": [7, 3], "initial_open": false },
-    { "id": 13, "pos": [7, 4], "initial_open": false }
+    { "id": 0, "pos": [9,4], "initial_open": false },
+    { "id": 1, "pos": [5,2], "initial_open": false },
+    { "id": 2, "pos": [6,7], "initial_open": false },
+    { "id": 3, "pos": [1,8], "initial_open": true },
+    { "id": 4, "pos": [3,2], "initial_open": false },
+    { "id": 5, "pos": [0,7], "initial_open": true },
+    { "id": 6, "pos": [3,1], "initial_open": false },
+    { "id": 7, "pos": [4,3], "initial_open": false }
   ],
   "switches": [
-    {
-      "pos": [1, 0],
-      "type": "soft",
-      "effect": { "mode": "toggle", "bridges": [0, 1, 2, 3, 4, 5] }
-    },
-    {
-      "pos": [4, 0],
-      "type": "split",
-      "split_targets": [[0, 3], [8, 3]]
-    },
-    {
-      "pos": [6, 0],
-      "type": "heavy",
-      "effect": { "mode": "set_open", "bridges": [6, 7, 8, 9, 10, 11, 12, 13] }
-    }
+    { "pos": [3,3], "type": "soft", "effect": { "mode": "toggle", "bridges": [3,6] } },
+    { "pos": [7,2], "type": "soft", "effect": { "mode": "set_close", "bridges": [6,0] } },
+    { "pos": [8,6], "type": "heavy", "effect": { "mode": "set_open", "bridges": [2,7,0] } },
+    { "pos": [5,4], "type": "split", "split_targets": [[5,0], [5,6]] }
   ]
 }
