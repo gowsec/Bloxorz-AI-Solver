@@ -17,7 +17,7 @@
     { "id": 2, "pos": [6,0], "initial_open": false }
   ],
   "switches": [
-    { "pos": [6,2], "type": "heavy", "effect": { "mode": "set_open", "bridges": [0,1,2] } },
+    { "pos": [6,2], "type": "soft", "effect": { "mode": "set_open", "bridges": [0,1,2] } },
     { "pos": [8,4], "type": "split", "split_targets": [[8,6],[0,3]] }
   ]
 }
