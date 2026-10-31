@@ -1,6 +1,6 @@
 """DFS
 
-Cả hai dùng stack tường minh (không đệ quy) nên không bị giới hạn độ sâu đệ quy
+Dùng stack tường minh (không đệ quy) nên không bị giới hạn độ sâu đệ quy
 của Python. Hành động được thử theo đúng thứ tự engine trả về (UP, DOWN, LEFT,
 RIGHT; khối 0 trước khối 1), nên kết quả tái lập được.
 

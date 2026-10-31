@@ -1,26 +1,26 @@
 {
     "Basic": [
-        "level_01",
-        "level_02",
-        "level_03"
+        "level01",
+        "level02",
+        "level03"
     ],
     "Fragile": [
-        "level_04",
-        "level_05"
+        "level04",
+        "level05"
     ],
     "Switch": [
-        "level_06",
-        "level_07",
-        "level_08",
-        "level_09",
-        "level_10",
-        "level_12",
-        "level_13"
+        "level06",
+        "level07",
+        "level08",
+        "level09",
+        "level10",
+        "level12",
+        "level13"
     ],
     "Combined": [
-        "level_11",
-        "level_14",
-        "level_15",
-        "level_16"
+        "level11",
+        "level14",
+        "level15",
+        "level16"
     ]
 }
