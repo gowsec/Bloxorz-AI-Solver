@@ -102,6 +102,21 @@ class Renderer:
             return level.terrain[r][c] != '.'
 
         # ---------- Tiles ----------
+        # Keep the map on its own alpha surface.  When a block falls behind the
+        # board, the same surface can be composited again after the block to
+        # restore the tiles that should occlude it.
+        tile_surface = pygame.Surface(canvas.get_size(), pygame.SRCALPHA)
+        foreground_mask = pygame.Surface(canvas.get_size(), pygame.SRCALPHA)
+        edge_fall = (
+            animation is not None
+            and getattr(animation, 'is_falling', False)
+            and getattr(animation, 'fall_kind', None) == "edge"
+            and isinstance(getattr(animation, 'old_pose', None), BlockPose)
+        )
+        fall_key = None
+        if edge_fall:
+            fall_origin = animation.old_pose
+            fall_key = (fall_origin.r + fall_origin.c, fall_origin.r)
         tiles = [(r, c) for r, line in enumerate(level.terrain) for c, cell in enumerate(line) if cell != '.']
         for bridge in level.bridges.values():
             tiles.append(bridge.pos)
@@ -119,7 +134,12 @@ class Renderer:
         for row, col in tiles:
             if (row, col) == broken:
                 continue
-            polygon((11, 17, 29), [(x+8, y+12) for x, y in diamond(row, col, z=-0.3)], None)
+            polygon(
+                (11, 17, 29),
+                [(x + 8, y + 12) for x, y in diamond(row, col, z=-0.3)],
+                None,
+                tile_surface,
+            )
 
         for row, col in sorted(tiles, key=lambda pos: (sum(pos), pos[0])):
             tile = level.terrain[row][col]
@@ -134,15 +154,24 @@ class Renderer:
             color = FRAGILE if tile == 'F' else FLOOR
             side1 = (157, 91, 37) if tile == 'F' else (87, 105, 128)
             side2 = (189, 113, 43) if tile == 'F' else (112, 131, 152)
-            polygon(side1, [top[1], top[2], bottom[2], bottom[1]])
-            polygon(side2, [top[2], top[3], bottom[3], bottom[2]])
-            polygon(color, top)
+            polygon(side1, [top[1], top[2], bottom[2], bottom[1]], surf=tile_surface)
+            polygon(side2, [top[2], top[3], bottom[3], bottom[2]], surf=tile_surface)
+            polygon(color, top, surf=tile_surface)
+            if fall_key is not None and (row + col, row) > fall_key:
+                # Only tiles closer to the camera become an occlusion layer.
+                # Distant tiles remain behind a block that falls away from us.
+                for face in (
+                    [top[1], top[2], bottom[2], bottom[1]],
+                    [top[2], top[3], bottom[3], bottom[2]],
+                    top,
+                ):
+                    pygame.draw.polygon(foreground_mask, (255, 255, 255, 255), face)
             if (row, col) == level.goal:
                 opening = diamond(row, col)
-                polygon((10, 15, 24), opening, None)
-                pygame.draw.lines(canvas, GOAL, True, opening, 2)
+                polygon((10, 15, 24), opening, None, tile_surface)
+                pygame.draw.lines(tile_surface, GOAL, True, opening, 2)
             if tile == 'F':
-                pygame.draw.lines(canvas, (146, 83, 32), False,
+                pygame.draw.lines(tile_surface, (146, 83, 32), False,
                                   [point(row+dr, col+dc, .01 + dz) for dr, dc in ((.15, .4), (.42, .52), (.5, .35), (.8, .62))], 2)
             if (row, col) in level.switches:
                 switch_type = level.switches[(row, col)].type
@@ -158,10 +187,18 @@ class Renderer:
                 }
                 center = point(row + .5, col + .5, .06)
                 radius = max(7, round(scale * .17))
-                pygame.draw.circle(canvas, switch_colors[switch_type], center, radius)
-                pygame.draw.circle(canvas, (20, 28, 42), center, radius, 1)
+                pygame.draw.circle(tile_surface, switch_colors[switch_type], center, radius)
+                pygame.draw.circle(tile_surface, (20, 28, 42), center, radius, 1)
                 marker = self.font.render(switch_labels[switch_type], True, (255, 255, 255))
-                canvas.blit(marker, marker.get_rect(center=center))
+                tile_surface.blit(marker, marker.get_rect(center=center))
+
+        canvas.blit(tile_surface, (0, 0))
+        foreground_tiles = tile_surface.copy()
+        foreground_tiles.blit(
+            foreground_mask,
+            (0, 0),
+            special_flags=pygame.BLEND_RGBA_MULT,
+        )
 
         # ---------- Block ----------
         if state:
@@ -246,7 +283,6 @@ class Renderer:
                 target = pygame.Surface(canvas.get_size(), pygame.SRCALPHA) if sink_clip else canvas
                 for color, indices in faces:
                     polygon(color, [pts[i] for i in indices], surf=target)
-
                 if sink_clip:
                     gr, gc = sink_clip
                     left, right = point(gr + 1, gc), point(gr, gc + 1)
@@ -294,6 +330,12 @@ class Renderer:
                         for start, end in edges:
                             pygame.draw.line(canvas, (255, 221, 92), pts[start], pts[end], 5)
                             pygame.draw.line(canvas, (255, 250, 207), pts[start], pts[end], 2)
+
+            # Edge falls leave the playable area behind the visible board. Only
+            # nearer tiles are composited again, so they can hide the block
+            # without incorrectly covering it with distant map tiles.
+            if falling and getattr(animation, 'fall_kind', None) == "edge":
+                canvas.blit(foreground_tiles, (0, 0))
 
         if message:
             label = self.title_font.render(message, True, GOAL if 'win' in message.lower() else (255, 120, 120))
