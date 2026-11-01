@@ -4,7 +4,6 @@
 
 Dự án cài đặt lại trò chơi **Bloxorz** (có giao diện đồ họa) và bốn bộ giải tự động: **BFS**, **DFS/IDS**, **UCS** và **A\***. Các thuật toán tìm kiếm đều được tự cài đặt, thư viện ngoài chỉ dùng cho giao diện, cấu trúc dữ liệu, đo lường và vẽ biểu đồ.
 
-> **Video demo:** `<điền link YouTube công khai>`
 > **Báo cáo:** `Report.pdf`
 
 ---
@@ -91,7 +90,6 @@ Thư viện chính (xem phiên bản chính xác trong `requirements.txt`):
 | Thư viện | Mục đích |
 |---|---|
 | `pygame-ce` | Giao diện đồ họa |
-| `matplotlib`, `pandas` | Vẽ biểu đồ và xử lý bảng kết quả thực nghiệm |
 | `pytest` | Chạy kiểm thử |
 
 ---
@@ -110,29 +108,22 @@ python main.py
 |---|---|
 | Phím mũi tên | Lăn khối theo 4 hướng |
 | `Space` | Đổi khối đang điều khiển khi đã tách thành hai khối |
-| Nút **Restart** | Chơi lại màn hiện tại |
-| Nút **New Game** | Chọn màn khác |
-| Nút **BFS / DFS / UCS / A\*** | Chạy bộ giải tương ứng, sau đó phát lại lời giải |
+| Nút Restart | Chơi lại màn hiện tại |
+| Nút New Game | Chọn màn khác |
+| Nút BFS / DFS / UCS / A\* | Chạy bộ giải tương ứng, sau đó phát lại lời giải |
 
 ---
 
 ## 5. Cấu trúc thư mục
 
-```
+```text
 Bloxorz-AI-Solver/
-├── README.md                    # Tài liệu này
-├── requirements.txt             # pygame-ce, matplotlib, pandas, pytest, ...
-├── .gitignore                   # __pycache__/, *.pyc, experiments/results/tmp/
-├── main.py                      # Điểm vào: khởi chạy GUI
+├── README.md                    # Giới thiệu dự án, hướng dẫn cài đặt, chạy chương trình và sử dụng
+├── requirements.txt             # Danh sách thư viện cần thiết (pygame-ce, pytest)
+├── .gitignore                   # Các file và thư mục không đưa lên Git
+├── main.py                      # Điểm khởi chạy chính của chương trình GUI
 │
-├── assets/                      # Tài nguyên cho GUI
-│   ├── images/
-│   ├── tiles/                   # Sprite các loại ô (floor, fragile, goal, bridge, switch...)
-│   ├── buttons/
-│   └── sounds/
-│
-├── levels/                      # Mỗi màn một file JSON
-│   ├── README.md                # Mô tả schema JSON (bridge, switch, split, liên kết switch-bridge)
+├── levels/                      # Lưu trữ dữ liệu các màn chơi dưới định dạng JSON
 │   ├── level01.json
 │   ├── level02.json
 │   └── ...
@@ -140,66 +131,69 @@ Bloxorz-AI-Solver/
 ├── src/
 │   ├── __init__.py
 │   │
-│   ├── core/                    # Lõi: dữ liệu và luật cơ bản
+│   ├── core/                    # Thành phần cốt lõi: dữ liệu trạng thái và luật di chuyển
 │   │   ├── __init__.py
-│   │   ├── constants.py         # Hướng đi, loại ô, tư thế khối
-│   │   ├── state.py             # State bất biến + hashable (vị trí, tư thế, bridge, split)
-│   │   ├── board.py             # Bản đồ, ô, ô đích, Level, Bridge, Switch, Effect
-│   │   ├── move.py              # Bảng chuyển tư thế (orientation, direction) -> (orientation, pos)
-│   │   ├── engine.py            # step(state, action), get_successors(), is_goal(), điều phối mechanics
-│   │   └── utils.py
+│   │   ├── constants.py         # Định nghĩa hướng di chuyển, loại ô và tư thế khối
+│   │   ├── state.py             # Biểu diễn trạng thái bất biến, hỗ trợ hash để tìm kiếm
+│   │   ├── board.py             # Định nghĩa cấu trúc bản đồ, Level, Bridge, Switch và Effect
+│   │   ├── move.py              # Xử lý quy tắc di chuyển và thay đổi tư thế của khối
+│   │   └── engine.py            # Bộ máy điều phối: chuyển trạng thái, kiểm tra thắng và sinh trạng thái kế tiếp
 │   │
-│   ├── mechanics/               # Cơ chế nâng cao (do engine.py gọi theo thứ tự cố định)
+│   ├── mechanics/               # Cài đặt các cơ chế đặc biệt của trò chơi
 │   │   ├── __init__.py
-│   │   ├── fragile.py           # Ô dễ vỡ
-│   │   ├── bridge.py            # Cầu đóng/mở, apply_effect, initial_bridges
-│   │   ├── switch.py            # Soft / Heavy / Split switch, toggle / permanent
-│   │   └── split.py             # Tách và ghép khối (gồm merge)
+│   │   ├── fragile.py           # Kiểm tra và xử lý các ô dễ vỡ
+│   │   ├── bridge.py            # Quản lý trạng thái cầu và áp dụng hiệu ứng đóng/mở cầu
+│   │   ├── switch.py            # Xử lý công tắc Soft, Heavy, Split và các hiệu ứng
+│   │   └── split.py             # Xử lý tách khối thành hai khối lập phương và hợp nhất
 │   │
-│   ├── solvers/                 # Thuật toán tìm kiếm
+│   ├── solvers/                 # Cài đặt các thuật toán tìm kiếm lời giải
 │   │   ├── __init__.py
-│   │   ├── result.py            # SolverResult: path, states, time, peak_memory, expanded_nodes, status...
-│   │   ├── base_solver.py       # Interface chung + Stats + đo thời gian/bộ nhớ
-│   │   ├── costs.py             # Hàm chi phí dùng chung cho UCS và A*
-│   │   ├── heuristics.py        # Heuristic của A* (admissible theo costs.py)
-│   │   ├── bfs.py
-│   │   ├── dfs.py               # DFS hoặc IDS
-│   │   ├── ucs.py
-│   │   └── astar.py
+│   │   ├── result.py            # Cấu trúc kết quả: đường đi, chi phí, thời gian và thống kê tìm kiếm
+│   │   ├── base_solver.py       # Lớp cơ sở dùng chung và cơ chế thu thập thống kê
+│   │   ├── costs.py             # Định nghĩa hàm chi phí dùng chung cho UCS và A*
+│   │   ├── heuristics.py        # Xây dựng hàm heuristic phục vụ thuật toán A*
+│   │   ├── bfs.py               # Thuật toán tìm kiếm theo chiều rộng (Breadth-First Search)
+│   │   ├── dfs.py               # Thuật toán tìm kiếm theo chiều sâu (Depth-First Search)
+│   │   ├── ucs.py               # Thuật toán tìm kiếm chi phí đồng nhất (Uniform-Cost Search)
+│   │   └── astar.py             # Thuật toán tìm kiếm A* kết hợp chi phí và heuristic
 │   │
-│   ├── gui/                     # Giao diện Pygame
+│   ├── gui/                     # Thành phần giao diện đồ họa sử dụng Pygame
 │   │   ├── __init__.py
-│   │   ├── game.py              # Vòng lặp chính
-│   │   ├── renderer.py          # Vẽ bàn cờ, ô, khối
-│   │   ├── ui.py                # Nút, bảng thống kê
-│   │   ├── controls.py          # Xử lý phím và chuột
-│   │   └── animation.py         # Animation, replay lời giải
+│   │   ├── game.py              # Điều phối vòng lặp chính và trạng thái hoạt động của trò chơi
+│   │   ├── renderer.py          # Hiển thị bản đồ, khối và các thành phần trên màn hình
+│   │   ├── ui.py                # Xây dựng các nút bấm và thành phần giao diện
+│   │   ├── controls.py          # Xử lý thao tác bàn phím và chuột
+│   │   ├── sample_level.py      # Cung cấp dữ liệu màn chơi mẫu cho giao diện
+│   │   └── animation.py         # Điều khiển hoạt ảnh di chuyển và phát lại lời giải
 │   │
-│   └── utils/                   # Tiện ích dùng chung
-│       ├── __init__.py
-│       ├── json_loader.py       # Đọc/kiểm tra file màn chơi
-│       ├── logger.py
-│       └── timer.py
+│   └── utils/                   # Các tiện ích hỗ trợ dùng chung
+│       └── json_loader.py       # Đọc, chuyển đổi và kiểm tra dữ liệu màn chơi từ JSON
 │
-├── tests/                       # Unit test
+├── tests/                       # Tập hợp các kiểm thử tự động cho dự án
 │   ├── __init__.py
-│   ├── test_moves.py            # Bảng chuyển tư thế, nước đi hợp lệ
-│   ├── test_mechanics.py        # Fragile, bridge, switch, split/merge
-│   ├── test_solvers.py          # Lời giải hợp lệ khi phát lại trên engine; BFS = UCS (cost đều)
-│   └── test_levels.py           # Mọi màn nạp được và có lời giải
+│   ├── test_moves.py            # Kiểm thử quy tắc di chuyển và thay đổi tư thế khối
+│   ├── test_mechanics.py        # Kiểm thử các cơ chế cầu, công tắc và ô dễ vỡ
+│   ├── test_solvers.py          # Kiểm thử kết quả và hành vi của các thuật toán tìm kiếm
+│   ├── test_levels.py           # Kiểm thử dữ liệu và tính hợp lệ của các màn chơi
+│   ├── test_astar.py            # Kiểm thử thuật toán A* và tính chất heuristic
+│   ├── test_engine.py           # Kiểm thử quá trình chuyển trạng thái của Engine
+│   └── test_split.py            # Kiểm thử cơ chế tách và hợp nhất khối
 │
-├── experiments/                 # Thực nghiệm
+├── experiments/                 # Các chương trình phục vụ thực nghiệm và đánh giá
 │   ├── __init__.py
-│   ├── benchmark.py             # Đo thời gian, bộ nhớ đỉnh, số node, độ dài lời giải
-│   ├── run_all_levels.py        # Chạy toàn bộ solver trên bộ test cố định
-│   ├── plot_results.py          # Vẽ biểu đồ từ CSV/JSON
-│   └── results/                 # Xuất CSV/JSON
+│   ├── benchmark.py             # Đo thời gian, bộ nhớ, số node và độ dài lời giải
+│   ├── compare_astar_ucs.py     # So sánh hiệu quả và chi phí lời giải giữa A* và UCS
+│   ├── test_set.json            # Khai báo bộ màn chơi được sử dụng trong thực nghiệm
+│   ├── verify_heuristic.py      # Kiểm tra tính chất và độ chính xác của heuristic
+│   └── results/                 # Lưu kết quả thực nghiệm dưới định dạng CSV/JSON
 │
-├── feedbacks/ 
+├── feedbacks/                   # Lưu trữ phản hồi, ghi chú và các vấn đề cần cải thiện
 │
-└── docs/
-    ├── architecture.md          # State, engine.step, SolverResult, thứ tự xử lý mechanics
-    └── report_template.md
+└── docs/                        # Tài liệu thiết kế và đặc tả kỹ thuật của dự án
+    ├── architecture.md          # Mô tả kiến trúc tổng thể và cách các thành phần phối hợp
+    ├── architecture_v2.md       # Phiên bản kiến trúc cập nhật, đặc tả chi tiết State và Engine
+    ├── heuristic_proof.md       # Trình bày cơ sở và chứng minh tính chất của heuristic
+    └── mile_stone01.md          # Ghi nhận kế hoạch, tiến độ và các mốc phát triển dự án
 ```
 
 ---
@@ -304,13 +298,13 @@ Cách đo, theo định nghĩa thống nhất cho cả bốn thuật toán:
 
 ## 10. Thành viên
 
-| Vai trò | Họ tên | MSSV | Phụ trách chính |
-|---|---|---|---|
-| A (Team Lead) | Minh Quang | 24120420 | Kiến trúc, A\*, heuristic, tích hợp, biên tập báo cáo |
-| B | Mai Đăng Khoa | 24120346 | Engine cơ bản, loader, test màn chơi |
-| C | Lâm Anh Khang | 24120335 | Cơ chế nâng cao (cầu, công tắc, tách/ghép) |
-| D | Nguyễn Trọng Phú | 24120410 | BFS, DFS/IDS, UCS, benchmark |
-| E | Trần Thanh Tùng | 20120409 | Giao diện, biểu đồ thực nghiệm, video |
+| Họ tên | MSSV | Phụ trách chính |
+|---|---|---|
+| Minh Quang | 24120420 | Kiến trúc, A\*, heuristic, tích hợp, biên tập báo cáo |
+| Mai Đăng Khoa | 24120346 | Engine cơ bản, loader, test màn chơi |
+| Lâm Anh Khang | 24120335 | Cơ chế nâng cao (cầu, công tắc, tách/ghép) |
+| Nguyễn Trọng Phú | 24120410 | BFS, DFS/IDS, UCS, benchmark |
+| Trần Thanh Tùng | 20120409 | Giao diện, biểu đồ thực nghiệm, video |
 
 Tỷ lệ đóng góp của từng thành viên được ghi trong `Report.pdf`.
 
